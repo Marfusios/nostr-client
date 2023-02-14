@@ -5,7 +5,6 @@ using Nostr.Client.Websocket.Messages;
 namespace Nostr.Client.Websocket.Responses
 {
     [DebuggerDisplay("{CreatedAt} {Kind.ToString()}")]
-    // [JsonConverter(typeof(ResponseConverter<NostrEvent>))]
     public class NostrEvent
     {
         /// <summary>

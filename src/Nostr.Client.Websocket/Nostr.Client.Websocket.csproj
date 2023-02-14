@@ -13,8 +13,4 @@
     <PackageReference Include="Websocket.Client" Version="4.4.43" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Responses\Events\" />
-  </ItemGroup>
-
 </Project>

@@ -1,4 +1,5 @@
 ﻿using System.Net.WebSockets;
+using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
@@ -8,6 +9,8 @@ using Nostr.Client.Websocket.Client;
 using Nostr.Client.Websocket.Communicator;
 using Nostr.Client.Websocket.Messages;
 using Nostr.Client.Websocket.Requests;
+using Nostr.Client.Websocket.Responses;
+using Nostr.Client.Websocket.Responses.Metadata;
 using Serilog;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
@@ -40,7 +43,7 @@ using var communicator = new NostrWebsocketCommunicator(url, () =>
     return client;
 });
 
-communicator.Name = "Nostr-1";
+communicator.Name = $"Nostr {url.Host}";
 communicator.ReconnectTimeout = null; //TimeSpan.FromSeconds(30);
 communicator.ErrorReconnectTimeout = TimeSpan.FromSeconds(60);
 
@@ -51,8 +54,23 @@ communicator.DisconnectionHappened.Subscribe(info =>
 
 using var client = new NostrWebsocketClient(communicator, logFactory.CreateLogger<NostrWebsocketClient>());
 
-client.Streams.EventStream.Subscribe(x =>
-    Log.Information("{kind}: {content}", x.Event?.Kind, x.Event?.Content));
+IObservable<NostrEvent> events = client.Streams.EventStream
+    .Select(x => x.Event)
+    .Where(x => x != null)!;
+
+events.Subscribe(x =>
+        Log.Information("{kind}: {content}", x.Kind, x.Content));
+
+events
+    .Where(x => x.Kind == NostrKind.Contacts)
+    .Subscribe(x =>
+        Log.Information("{kind}: {content}", x.Kind, x.Content));
+
+events
+    .OfType<NostrMetadataEvent>()
+    .Subscribe(x =>
+        Log.Information("Name: {name}, about: {about}", x.Metadata?.Name, x.Metadata?.About));
+
 client.Streams.NoticeStream.Subscribe(x => Log.Information("Notice: {message}", x.Message));
 client.Streams.EoseStream.Subscribe(x => Log.Information("EOSE of subscription {subscription}", x.Subscription));
 client.Streams.UnknownMessageStream.Subscribe(x => Log.Information("Unknown {messageType} message, data: {data}", x.MessageType, JsonConvert.SerializeObject(x.AdditionalData)));
@@ -71,9 +89,9 @@ client.Send(new NostrRequest("timeline:pubkey:follows", new NostrFilter
     Authors = new[]
         {
             //"npub1v0lxxxxutpvrelsksy8cdhgfux9l6a42hsj2qzquu2zk7vc9qnkszrqj49",
-            "63fe6318dc58583cfe16810f86dd09e18bfd76aabc24a0081ce2856f330504ed"
+            // "63fe6318dc58583cfe16810f86dd09e18bfd76aabc24a0081ce2856f330504ed"
             //"3efdaebb1d8923ebd99c9e7ace3b4194ab45512e2be79c1b7d68d9243e0d2681",
-            //"6b75a3b4832f265989254ca560b700da3343d707d2319e7a45f4e01afe4a0c31",
+            "6b75a3b4832f265989254ca560b700da3343d707d2319e7a45f4e01afe4a0c31",
             //"82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2",
             //"63fe6318dc58583cfe16810f86dd09e18bfd76aabc24a0081ce2856f330504ed",
             //"e9e4276490374a0daf7759fd5f475deff6ffb9b0fc5fa98c902b5f4b2fe3bba2",
@@ -106,7 +124,7 @@ client.Send(new NostrRequest("timeline:pubkey:follows", new NostrFilter
         NostrKind.ClientAuthentication
     },
     Since = DateTime.UtcNow.AddHours(-12),
-    Until = DateTime.UtcNow
+    Until = DateTime.UtcNow.AddHours(4)
 }));
 
 exitEvent.WaitOne();
