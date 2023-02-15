@@ -1,4 +1,6 @@
-﻿namespace Nostr.Client.Websocket.Responses.Metadata
+﻿using Newtonsoft.Json;
+
+namespace Nostr.Client.Websocket.Responses.Metadata
 {
     public class NostrMetadata
     {
@@ -15,5 +17,11 @@
         public string? Banner { get; init; }
 
         public string? Nip57 { get; init; }
+
+        /// <summary>
+        /// Additional unparsed data
+        /// </summary>
+        [JsonExtensionData]
+        public Dictionary<string, object> AdditionalData { get; init; } = new();
     }
 }

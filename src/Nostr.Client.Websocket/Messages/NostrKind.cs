@@ -26,14 +26,11 @@
 
         RelayListMetadata = 10002,
         ClientAuthentication = 22242,
-        LongFormContent = 30023,
+        LongFormContent = 30023
 
         // nip-16 regular events                   [ 1000- 9999]
         // nip-16 replaceable events               [10000-19999]
         // nip-16 ephemeral  events                [20000-29999]
         // nip-33 parameterized replaceable events [30000-39999]
-
-
-        Unknown = int.MaxValue
     }
 }

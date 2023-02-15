@@ -1,0 +1,93 @@
+﻿@page "/converter"
+@using Nostr.Client.Websocket.Utils
+
+<PageTitle>Converter</PageTitle>
+
+<Stack Orientation="Orientation.Vertical">
+    
+    <div class="page-title-group">
+        <h1 class="page-title">Converter</h1>
+        <p class="page-subtitle">Conversion between Nostr keys</p>
+        <FluentDivider style="width: 100%">Test</FluentDivider>
+    </div>
+    
+    <h3>Bech32 <FluentIcon Name="@FluentIcons.ArrowsBidirectional" Size="@IconSize.Size20" Variant="@IconVariant.Regular" Color="@Color.Accent" /> Hex</h3>
+    
+    <div class="conversion-group">
+        <Stack Orientation="Orientation.Vertical"
+               HorizontalAlignment="StackHorizontalAlignment.Left"
+               VerticalAlignment="StackVerticalAlignment.Top"
+               VerticalGap="20" 
+               HorizontalGap="20">
+           
+            <FluentTextField Style="width: 100%" Placeholder="npub1xxx" Value="@_bech32Key" @oninput="Bech32Set"><strong>Bech32 key</strong></FluentTextField>
+        
+            <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="0">
+                <strong>Prefix</strong>
+                <FluentCombobox Items="@_prefixes" Value="@_prefix" ValueChanged="@PrefixSet"></FluentCombobox>
+            </Stack>
+
+            <FluentTextField style="width: 100%" Placeholder="" Value="@_hexKey" @oninput="HexSet"><strong>Hex key</strong></FluentTextField>
+        
+        </Stack>
+    </div>
+
+</Stack>
+
+@code
+{
+    readonly string[] _prefixes = new[]
+    {
+        "npub",
+        "nsec",
+        "note",
+        "nprofile",
+        "nevent",
+        "nrelay",
+        "naddr"
+    };
+
+    string? _prefix = "npub";
+    string? _bech32Key;
+    string? _hexKey;
+
+    private void Bech32Set(ChangeEventArgs args)
+    {
+        try
+        {
+            _bech32Key = (string?)args.Value;
+            _hexKey = NostrConverter.ToHex(_bech32Key, out var hrp);
+            _prefix = hrp ?? string.Empty;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to parse bech32 key, error: {e.Message}");
+        }
+    }
+
+    private void HexSet(ChangeEventArgs args)
+    {
+        try
+        {
+            _hexKey = (string?)args.Value;
+            _bech32Key = NostrConverter.ToBech32(_hexKey, _prefix ?? "unknown");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to parse hex key, error: {e.Message}");
+        }
+    }
+
+    private void PrefixSet(string? value)
+    {
+        try
+        {
+            _prefix = value ?? string.Empty;
+            _bech32Key = NostrConverter.ToBech32(_hexKey, _prefix ?? "unknown");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to parse bech32 key, error: {e.Message}");
+        }
+    }
+}

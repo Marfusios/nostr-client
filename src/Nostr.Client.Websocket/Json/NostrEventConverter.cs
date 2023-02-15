@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using Nostr.Client.Websocket.Messages;
 using Nostr.Client.Websocket.Responses;
+using Nostr.Client.Websocket.Responses.Contacts;
 using Nostr.Client.Websocket.Responses.Metadata;
 
 namespace Nostr.Client.Websocket.Json
@@ -39,6 +40,7 @@ namespace Nostr.Client.Websocket.Json
                 return kind switch
                 {
                     NostrKind.Metadata => typeof(NostrMetadataEvent),
+                    NostrKind.Contacts => typeof(NostrContactEvent),
                     _ => typeof(NostrEvent)
                 };
             }

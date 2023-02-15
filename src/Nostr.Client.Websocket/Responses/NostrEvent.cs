@@ -4,7 +4,7 @@ using Nostr.Client.Websocket.Messages;
 
 namespace Nostr.Client.Websocket.Responses
 {
-    [DebuggerDisplay("{CreatedAt} {Kind.ToString()}")]
+    [DebuggerDisplay("{CreatedAt} {Kind.ToString()} {Pubkey}")]
     public class NostrEvent
     {
         /// <summary>
@@ -35,7 +35,7 @@ namespace Nostr.Client.Websocket.Responses
         public string? Sig { get; init; }
 
         /// <summary>
-        /// Additional unparsed
+        /// Additional unparsed data
         /// </summary>
         [JsonExtensionData]
         public Dictionary<string, object> AdditionalData { get; init; } = new();

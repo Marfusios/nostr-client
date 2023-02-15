@@ -1,0 +1,39 @@
+﻿@inject NavigationManager NavigationManager
+
+<ul>
+    <li>
+        <FluentAnchor Href="relay" Appearance=@SetAppearance("Relay")>Relay <FluentIcon Slot="start" Name="@FluentIcons.CloudLink" Size="@IconSize.Size20" Color="Color.Accent" /></FluentAnchor>
+    </li>
+    <li>
+        <FluentAnchor Href="query" Appearance=@SetAppearance("Query")>Query Tool <FluentIcon Slot="start" Name="@FluentIcons.ChatBubblesQuestion" Size="@IconSize.Size20" Color="Color.Accent" /></FluentAnchor>
+    </li>
+    <li>
+        <FluentAnchor Href="converter" Appearance=@SetAppearance("Converter")>Converter <FluentIcon Slot="start" Name="@FluentIcons.ConvertRange" Size="@IconSize.Size20" Color="Color.Accent" /></FluentAnchor>
+    </li>
+</ul>
+
+@code {
+    private string? _target;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += LocationChanged;
+        UpdateLocation(NavigationManager.Uri);
+        base.OnInitialized();
+    }
+
+    private void LocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateLocation(e.Location);
+    }
+
+    private void UpdateLocation(string currentUrl)
+    {
+        var uri = new Uri(currentUrl);
+        _target = uri.Segments.Length > 1 ? uri.Segments[1] : "";
+        StateHasChanged();
+    }
+
+    private Appearance SetAppearance(string location) => (string.Equals(location, _target, StringComparison.OrdinalIgnoreCase)) ? Appearance.Neutral : Appearance.Stealth;
+
+}
