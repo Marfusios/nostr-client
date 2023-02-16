@@ -60,11 +60,10 @@ body {
 
             .siteheader .logo .logo-text span {
                 font-weight: 900;
-                color: var(--accent-foreground-rest);
+                color: var(--accent-foreground-active);
             }
 
     .siteheader .git-repo {
-        margin-left: auto;
         margin-right: 20px;
     }
 
@@ -199,17 +198,26 @@ body {
     margin: 0;
 }
 
-.page-title-group {
-    margin-bottom: 20px;
-    width: 100%;
+.m-left-auto {
+    margin-left: auto;
 }
 
-.page-title {
-    margin: 0;
-    margin-bottom: 5px;
+.m-r-1 {
+    margin-right: 10px;
 }
 
-.page-subtitle {
-    margin: 0;
-    margin-bottom: 5px;
+.m-r-2 {
+    margin-right: 20px;
+}
+
+.m-r-3 {
+    margin-right: 30px;
+}
+
+.m-r-4 {
+    margin-right: 40px;
+}
+
+.m-r-5 {
+    margin-right: 50px;
 }

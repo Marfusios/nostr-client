@@ -1,42 +1,123 @@
 ﻿@page "/query"
-@inject HttpClient Http
+@using Nostr.Client.Websocket.Requests
+@using Nostr.Client.Websocket.Responses
+@using Nostr.Client.Websocket.Messages
+@using Nostr.Client.Websocket.Utils
+@inject RelayConnection NostrRelay
+@implements IDisposable
 
-<PageTitle>Query Tool</PageTitle>
+<Stack Orientation="Orientation.Vertical">
 
-<h1>Query Tool</h1>
+    <PageHeader Title="Query Tool" Subtitle="Request data from the connected relay"></PageHeader>
 
-<p>This component demonstrates fetching data from a service.</p>
+    <Stack Orientation="Orientation.Horizontal" HorizontalGap="20">
+        
+        <div class="filter-form">
+            <EditForm Model="_filter" style="margin-bottom: 20px">
+                <Stack Orientation="Orientation.Vertical" HorizontalGap="10">
+                    
+                    <FluentTextField style="width: 100%" Placeholder="" @bind-Value="_channel">
+                        <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
+                        <strong>Subscription</strong>
+                    </FluentTextField>
+                    
+                    @*<FluentTextField @bind-Value="_filter.Since">
+                        <strong>Since</strong>
+                    </FluentTextField>
+                    
+                    <FluentTextField @bind-Value="_filter.Until">
+                        <strong>Until</strong>
+                    </FluentTextField>*@
 
-@if (forecasts == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <FluentDataGrid id="manualGrid" RowsData=@forecasts GridTemplateColumns="1fr 1fr 1fr 2fr" TGridItem=WeatherForecast>
-        <PropertyColumn Title="Date" Property="@(c => c.Date)" Sortable="true" Align=Align.Left/>
-        <PropertyColumn Title="Temp. (C)" Property="@(c => c.TemperatureC)" Sortable="true" Align=Align.Center/>
-        <PropertyColumn Title="Temp. (F)" Property="@(c => c.TemperatureF)" Sortable="true" Align=Align.Center/>
-        <PropertyColumn Title="Summary" Property="@(c => c.Summary)" Sortable="true" Align=Align.Right/>
-    </FluentDataGrid>
-}
+                    <FluentNumberField Min="0" @bind-Value="_filter.Limit">
+                        <strong>Limit</strong>
+                    </FluentNumberField>
+
+                    <FluentTextArea style="width: 100%" Placeholder="hex or npubs" Resize="TextAreaResize.Vertical" @bind-Value="_authorsText">
+                        <strong>Authors</strong>
+                    </FluentTextArea>
+
+                </Stack>
+            </EditForm>
+            
+            <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
+                Send
+                <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" />
+            </FluentButton>
+
+        </div>
+
+    </Stack>
+
+</Stack>
 
 @code {
-    private IQueryable<WeatherForecast> forecasts;
-
-    protected override async Task OnInitializedAsync()
+    private string _channel = "timeline:something";
+    private readonly NostrFilter _filter = new()
     {
-        forecasts = (await Http.GetFromJsonAsync<List<WeatherForecast>>("sample-data/weather.json"))!.AsQueryable();
+        Kinds = new[]
+        {
+            NostrKind.Metadata,
+            NostrKind.ShortTextNote,
+            NostrKind.Reaction,
+            NostrKind.Contacts,
+            NostrKind.RecommendRelay,
+            NostrKind.EventDeletion,
+            NostrKind.Reporting,
+            NostrKind.ClientAuthentication
+        },
+        Since = DateTime.UtcNow.AddHours(-12),
+        Until = DateTime.UtcNow.AddHours(4)
+    };
+
+    private string? _authorsText;
+
+    private IDisposable? _subscription;
+
+    public void Dispose()
+    {
+        _subscription?.Dispose();
     }
 
-    public class WeatherForecast
+    protected override void OnInitialized()
     {
-        public DateTime Date { get; set; }
+        _subscription = NostrRelay.Client.Streams.EventStream.Subscribe(HandleEvent);
 
-        public int TemperatureC { get; set; }
+        base.OnInitialized();
+    }
 
-        public string? Summary { get; set; }
+    private void OnSend()
+    {
+        Console.WriteLine($"Sending filter to {NostrRelay.Communicator.Url.Host}");
 
-        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        _filter.Authors = (_authorsText ?? string.Empty)
+            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(TryConvertNpub)
+            .ToArray();
+
+        NostrRelay.Client.Send(new NostrRequest(_channel, _filter));
+    }
+
+    private void HandleEvent(NostrEventResponse response)
+    {
+        var ev = response.Event;
+        Console.WriteLine($"{ev?.Kind}: {ev?.Content}");
+    }
+
+    private string TryConvertNpub(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return key;
+        }
+
+        try
+        {
+            return NostrConverter.ToHex(key, out _) ?? key;
+        }
+        catch (Exception e)
+        {
+            return key;
+        }
     }
 }
