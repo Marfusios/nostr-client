@@ -1,6 +1,9 @@
 ﻿.filter-form {
-    padding-left: 20px;
-    max-width: 550px;
+    margin-left: 20px;
     width: 100%;
     margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: minmax(250px, 1fr) 2fr;
+    grid-template-rows: max-content;
+    column-gap: 40px;
 }

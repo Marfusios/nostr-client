@@ -1,5 +1,4 @@
-﻿@using System.Reactive.Linq
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
 @inject RelayConnection NostrRelay
 
 <div class="container">
@@ -10,7 +9,7 @@
             </p>
         </a>
         
-        <div class="m-left-auto m-r-3">
+        <a class="m-left-auto m-r-3 clear-link cursor-hand menu-link" style="line-height: 44px" @onclick="OnDisplayRelayDialog">
             
             @if (_isRelayConnected)
             {
@@ -20,11 +19,13 @@
             {
                 <FluentIcon style="vertical-align: middle" Name="@FluentIcons.CloudDismiss" Size="@IconSize.Size24" Variant="@IconVariant.Regular" Color="@Color.Error" />
             }
+            
+            <span class="m-l">Relay</span>
 
-        </div>
+        </a>
 
-        <div class="git-repo">
-            <a href="https://github.com/marfusios/nostr-client-websocket">Github Repository</a>
+        <div class="git-repo clear-link menu-link" style="line-height: 44px">
+            <a href="https://github.com/marfusios/nostr-client-websocket" target="_blank">Github Repository</a>
         </div>
     </div>
     <div class="main">
@@ -50,24 +51,44 @@
     </div>
 </div>
 
-@code {
+<FluentDialog @ref="_relayDialog" Modal="true" TrapFocus="false" @ondialogdismiss="OnHideRelayDialog">
+    <div class="dialog-content">
+        <Relay></Relay>
+    </div>
+</FluentDialog>
 
+@code {
+    private FluentDialog? _relayDialog;
     private bool _isRelayConnected;
 
     protected override Task OnInitializedAsync()
     {
         _isRelayConnected = NostrRelay.IsConnected;
-        return base.OnInitializedAsync();
-    }
-
-    protected override void OnInitialized()
-    {
         NostrRelay.ConnectionStream.Subscribe(connected =>
         {
             _isRelayConnected = connected;
             StateHasChanged();
         });
 
-        base.OnInitialized();
+        return base.OnInitializedAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            _relayDialog!.Hide();
+    }
+
+    private void OnDisplayRelayDialog()
+    {
+        _relayDialog?.Show();
+    }
+
+    private void OnHideRelayDialog(DialogEventArgs? args)
+    {
+        if (args?.Reason != null && args.Reason == "dismiss")
+        {
+            _relayDialog!.Hide();
+        }
     }
 }

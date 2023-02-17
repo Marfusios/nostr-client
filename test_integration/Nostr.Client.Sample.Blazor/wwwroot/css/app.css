@@ -67,9 +67,19 @@ body {
         margin-right: 20px;
     }
 
-        .siteheader .git-repo a {
-            text-decoration: none;
-        }
+.clear-link {
+    text-decoration: none;
+}
+
+.menu-link {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+    .menu-link:hover {
+        background-color: var(--neutral-fill-stealth-hover);
+        border-radius: 5px;
+    }
 
 .main {
     display: grid;
@@ -124,6 +134,9 @@ body {
     padding-inline-end: calc(var(--design-unit) * 6px);
 }
 
+.dialog-content {
+    padding: calc(var(--design-unit) * 6px);
+}
 
 #blazor-error-ui {
     background: lightyellow;
@@ -194,12 +207,24 @@ body {
     border: 1px solid transparent;
 }
 
+.cursor-hand {
+    cursor: pointer;
+}
+
 .no-margin {
     margin: 0;
 }
 
+.no-padding {
+    padding: 0;
+}
+
 .m-left-auto {
     margin-left: auto;
+}
+
+.m-r {
+    margin-right: 5px;
 }
 
 .m-r-1 {
@@ -220,4 +245,28 @@ body {
 
 .m-r-5 {
     margin-right: 50px;
+}
+
+.m-l {
+    margin-left: 5px;
+}
+
+.m-l-1 {
+    margin-left: 10px;
+}
+
+.m-l-2 {
+    margin-left: 20px;
+}
+
+.m-l-3 {
+    margin-left: 30px;
+}
+
+.m-l-4 {
+    margin-left: 40px;
+}
+
+.m-l-5 {
+    margin-left: 50px;
 }

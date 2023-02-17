@@ -3,6 +3,12 @@
 @using Nostr.Client.Responses
 @using Nostr.Client.Messages
 @using Nostr.Client.Utils
+@using System.Reactive.Linq
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Linq
+@using Nostr.Client.Responses.Metadata
+@using QuickGridPagination = Microsoft.AspNetCore.Components.QuickGrid.PaginationState
+@using FluentPagination = Microsoft.Fast.Components.FluentUI.PaginationState;
 @inject RelayConnection NostrRelay
 @implements IDisposable
 
@@ -29,6 +35,34 @@
 
                 </Stack>
                 
+                <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="0">
+                    <strong>Kinds</strong>
+                    
+                    <FluentButton Appearance="Appearance.Neutral" @onclick="OnDisplayKinds">
+                        <span>@_selectedKindsText</span>
+                        @if (_displayKindSelector)
+                        {
+                            <FluentIcon Name="@FluentIcons.ArrowUp" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral"/>
+                        }
+                        else
+                        {
+                            <FluentIcon Name="@FluentIcons.ArrowDown" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral"/>
+                        }
+                    </FluentButton>
+
+
+                    @if (_displayKindSelector)
+                    {
+                        <FluentSelect TOption="NostrKind"
+                                      Items="@_allKinds"
+                                      Multiple="true"
+                                      OptionValue="@(p => p.ToString())"
+                                      OptionText="@(p => $"{p.ToString()} [{(int)p}]")"
+                                      @bind-SelectedOptions="_selectedKinds">
+                        </FluentSelect>
+                    }
+                </Stack>
+
                 <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
                     
                     <FluentNumberField Value="@_hoursSince" @oninput="SetSince">
@@ -55,12 +89,72 @@
                     <strong>Authors</strong>
                 </FluentTextArea>
                 
+                <FluentTextArea style="width: 100%" Placeholder="hex or npubs" Resize="TextAreaResize.Vertical" @bind-Value="_idsText">
+                    <strong>Ids</strong>
+                </FluentTextArea>
+                
+                <FluentTextArea style="width: 100%" Placeholder="hex or npubs in E tag" Resize="TextAreaResize.Vertical" @bind-Value="_eIdsText">
+                    <strong>Ids (E)</strong>
+                </FluentTextArea>
+                
+                <FluentTextArea style="width: 100%" Placeholder="hex or npubs in P tag" Resize="TextAreaResize.Vertical" @bind-Value="_pIdsText">
+                    <strong>Ids (P)</strong>
+                </FluentTextArea>
+                
                 <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
                     Send
-                    <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" />
+                    <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
                 </FluentButton>
 
             </Stack>
+            
+            <div>
+                <FluentDataGrid RowsData="@_events" Pagination="@_pagination" GridTemplateColumns="0.08fr 0.25fr 0.2fr 0.2fr 0.2fr 1fr" RowsDataKey="@(p => p.Id ?? string.Empty)">
+                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Class="no-padding">
+                        <FluentButton Appearance="Appearance.Neutral" @onclick="@(() => OnDisplayEvent(context))" style="height: auto">
+                            ...
+                            @*<FluentIcon Name="@FluentIcons.Glasses" Size="@IconSize.Size16" Color="Color.Neutral" Variant="IconVariant.Regular" />*@
+                        </FluentButton>
+                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
+                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Created" Property="@(p => p.CreatedAt)" Format="MM-dd HH:mm:ss" Sortable="true"/>
+                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true"/>
+                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Id" Sortable="true">
+                        <span>@context.Id[..4]..@context.Id[^4..]</span>
+                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
+                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Author" Sortable="true">
+                        <span>@context.Pubkey[..4]..@context.Pubkey[^4..]</span>
+                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
+                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true"/>
+                </FluentDataGrid>
+                <FluentPaginator Value="@_pagination" />
+                
+                <FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
+                    <div class="dialog-content">
+                        <h2>@_selectedEvent?.Kind</h2>
+                        @if (_selectedEvent is NostrMetadataEvent)
+                        {
+                            <pre>@FormatEventContent(_selectedEvent?.Content)</pre>
+                        }
+                        else
+                        {
+                            <p>@FormatEventContent(_selectedEvent?.Content)</p>
+                        }
+                    </div>
+                </FluentDialog>
+            </div>
+            
+            @*<div>
+                <QuickGrid Items="@_events" Pagination="@_pagination">
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Created" Property="@(p => p.CreatedAt)" Format="MM-dd HH:mm:ss" Sortable="true" />
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true" />
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Id" Property="@(p => p.Id)" Sortable="true" />
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Author" Property="@(p => p.Pubkey)" Sortable="true" />
+                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true" />
+                </QuickGrid>
+                
+                <Paginator Value="@_pagination" />
+            </div>*@
+
         </div>
 
     </Stack>
@@ -68,20 +162,28 @@
 </Stack>
 
 @code {
+    private FluentDialog? _eventDialog;
+    private NostrEvent? _selectedEvent;
+
     private string _subscription = "timeline:something";
+
+    private readonly NostrKind[] _allKinds = Enum.GetValues(typeof(NostrKind)).Cast<NostrKind>().ToArray();
+    private bool _displayKindSelector;
+    private IEnumerable<NostrKind>? _selectedKinds =  new[]
+    {
+        NostrKind.Metadata,
+        NostrKind.ShortTextNote,
+        NostrKind.Reaction,
+        NostrKind.Contacts,
+        NostrKind.RecommendRelay,
+        NostrKind.EventDeletion,
+        NostrKind.Reporting,
+        NostrKind.ClientAuthentication
+    };
+    private string _selectedKindsText = string.Empty;
+
     private readonly NostrFilter _filter = new()
     {
-        Kinds = new[]
-        {
-            NostrKind.Metadata,
-            NostrKind.ShortTextNote,
-            NostrKind.Reaction,
-            NostrKind.Contacts,
-            NostrKind.RecommendRelay,
-            NostrKind.EventDeletion,
-            NostrKind.Reporting,
-            NostrKind.ClientAuthentication
-        },
         Since = DateTime.Now.AddHours(-12),
         Until = DateTime.Now.AddHours(4),
         Authors = new []
@@ -93,8 +195,15 @@
     };
 
     private string? _authorsText;
+    private string? _idsText;
+    private string? _eIdsText;
+    private string? _pIdsText;
     private int _hoursSince = -12;
     private int _hoursUntil = 4;
+
+    private readonly HashSet<NostrEvent> _receivedEvents = new();
+    private IQueryable<NostrEvent> _events = Array.Empty<NostrEvent>().AsQueryable();
+    private readonly FluentPagination _pagination = new() { ItemsPerPage = 15 };
 
     private IDisposable? _websocketHandler;
 
@@ -105,22 +214,46 @@
 
     protected override void OnInitialized()
     {
-        _websocketHandler = NostrRelay.Client.Streams.EventStream.Subscribe(HandleEvent);
+        _websocketHandler = NostrRelay.Client.Streams.EventStream
+            .Buffer(TimeSpan.FromSeconds(1))
+            .Subscribe(HandleEvent);
 
         // push default authors into input element
         _authorsText = string.Join(Environment.NewLine, _filter.Authors ?? Array.Empty<string>());
+        TransformSelectedKinds();
 
         base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            _eventDialog!.Hide();
+    }
+
+    private void HandleEvent(IList<NostrEventResponse> response)
+    {
+        var events = response
+            .Where(x => x.Event != null)
+            .Select(x => x.Event!);
+            //.Select(x => new NostrEventView(x.CreatedAt, x.Kind, x.Id, x.Pubkey, x.Content));
+        foreach (var evView in events)
+        {
+            _receivedEvents.Add(evView);
+        }
+        _events = _receivedEvents.AsQueryable();
+        StateHasChanged();
     }
 
     private void OnSend()
     {
         Console.WriteLine($"Sending filter to {NostrRelay.Communicator.Url.Host}");
 
-        _filter.Authors = (_authorsText ?? string.Empty)
-            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
-            .Select(TryConvertNpub)
-            .ToArray();
+        _filter.Kinds = _selectedKinds?.ToArray();
+        _filter.Authors = ConvertTextIds(_authorsText);
+        _filter.Ids = ConvertTextIds(_idsText);
+        _filter.E = ConvertTextIds(_eIdsText);
+        _filter.P = ConvertTextIds(_pIdsText);
 
         NostrRelay.Client.Send(new NostrRequest(_subscription, _filter));
     }
@@ -130,6 +263,25 @@
         Console.WriteLine($"Sending subscription '{_subscription}' close to {NostrRelay.Communicator.Url.Host}");
 
         NostrRelay.Client.Send(new NostrCloseRequest(_subscription));
+    }
+
+    private void OnBackgroundClick()
+    {
+        _displayKindSelector = false;
+        TransformSelectedKinds();
+    }
+
+    private void OnDisplayKinds()
+    {
+        _displayKindSelector = !_displayKindSelector;
+        TransformSelectedKinds();
+    }
+
+    private void TransformSelectedKinds()
+    {
+        _selectedKindsText = _selectedKinds == null ? 
+            string.Empty : 
+            string.Join(", ", _selectedKinds.Cast<int>().OrderBy(x => x));
     }
 
     private void SetSince(ChangeEventArgs args)
@@ -144,13 +296,17 @@
         _filter.Until = DateTime.Now.AddHours(_hoursUntil);
     }
 
-    private void HandleEvent(NostrEventResponse response)
+    private string[]? ConvertTextIds(string? text)
     {
-        var ev = response.Event;
-        Console.WriteLine($"{ev?.Kind}: {ev?.Content}");
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        return text
+            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(TryConvertBech32)
+            .ToArray();
     }
 
-    private string TryConvertNpub(string key)
+    private string TryConvertBech32(string key)
     {
         if (string.IsNullOrWhiteSpace(key))
         {
@@ -164,6 +320,36 @@
         catch (Exception e)
         {
             return key;
+        }
+    }
+
+    private void OnDisplayEvent(NostrEvent ev)
+    {
+        _selectedEvent = ev;
+        _eventDialog?.Show();
+    }
+
+    private void OnHideEvent(DialogEventArgs? args)
+    {
+        if (args?.Reason != null && args.Reason == "dismiss")
+        {
+            _eventDialog!.Hide();
+        }
+    }
+
+    private static string FormatEventContent(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        try
+        {
+            var parsed = JsonConvert.DeserializeObject<JObject>(content);
+            return parsed?.ToString(Formatting.Indented) ?? content;
+        }
+        catch (Exception)
+        {
+            return content;
         }
     }
 }
