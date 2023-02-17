@@ -1,0 +1,169 @@
+﻿@page "/query"
+@using Nostr.Client.Requests
+@using Nostr.Client.Responses
+@using Nostr.Client.Messages
+@using Nostr.Client.Utils
+@inject RelayConnection NostrRelay
+@implements IDisposable
+
+<Stack Orientation="Orientation.Vertical">
+
+    <PageHeader Title="Query Tool" Subtitle="Request data from the connected relay"></PageHeader>
+
+    <Stack Orientation="Orientation.Horizontal" HorizontalGap="20">
+        
+        <div class="filter-form">
+            <Stack Orientation="Orientation.Vertical" HorizontalGap="10">
+                
+                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+                    
+                    <FluentTextField style="width: 100%" Placeholder="" @bind-Value="_subscription">
+                        <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
+                        <strong>Subscription</strong>
+                    </FluentTextField>
+                    
+                    <FluentButton Appearance="Appearance.Neutral" @onclick="OnCloseSubscription" style="align-self: end">
+                        Close
+                        <FluentIcon Name="@FluentIcons.Dismiss" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
+                    </FluentButton>
+
+                </Stack>
+                
+                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+                    
+                    <FluentNumberField Value="@_hoursSince" @oninput="SetSince">
+                        <strong>Since (hours)</strong>
+                    </FluentNumberField>
+                
+                    <FluentNumberField Value="@_hoursUntil" @oninput="SetUntil">
+                        <strong>Until (hours)</strong>
+                    </FluentNumberField>
+                    
+                    <Stack Orientation="Orientation.Vertical" VerticalGap="0">
+                        <strong>Selected range (@TimeZoneInfo.Local.StandardName)</strong>
+                        <span>from @_filter.Since?.ToString("g")</span>
+                        <span>to @_filter.Until?.ToString("g")</span>
+                    </Stack>
+
+                </Stack>
+
+                <FluentNumberField Min="0" @bind-Value="_filter.Limit">
+                    <strong>Limit</strong>
+                </FluentNumberField>
+
+                <FluentTextArea style="width: 100%" Placeholder="hex or npubs" Resize="TextAreaResize.Vertical" @bind-Value="_authorsText">
+                    <strong>Authors</strong>
+                </FluentTextArea>
+                
+                <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
+                    Send
+                    <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" />
+                </FluentButton>
+
+            </Stack>
+        </div>
+
+    </Stack>
+
+</Stack>
+
+@code {
+    private string _subscription = "timeline:something";
+    private readonly NostrFilter _filter = new()
+    {
+        Kinds = new[]
+        {
+            NostrKind.Metadata,
+            NostrKind.ShortTextNote,
+            NostrKind.Reaction,
+            NostrKind.Contacts,
+            NostrKind.RecommendRelay,
+            NostrKind.EventDeletion,
+            NostrKind.Reporting,
+            NostrKind.ClientAuthentication
+        },
+        Since = DateTime.Now.AddHours(-12),
+        Until = DateTime.Now.AddHours(4),
+        Authors = new []
+        {
+            "npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63q0uf63m",
+            "npub1qny3tkh0acurzla8x3zy4nhrjz5zd8l9sy9jys09umwng00manysew95gx",
+            "npub1dergggklka99wwrs92yz8wdjs952h2ux2ha2ed598ngwu9w7a6fsh9xzpc"
+        }
+    };
+
+    private string? _authorsText;
+    private int _hoursSince = -12;
+    private int _hoursUntil = 4;
+
+    private IDisposable? _websocketHandler;
+
+    public void Dispose()
+    {
+        _websocketHandler?.Dispose();
+    }
+
+    protected override void OnInitialized()
+    {
+        _websocketHandler = NostrRelay.Client.Streams.EventStream.Subscribe(HandleEvent);
+
+        // push default authors into input element
+        _authorsText = string.Join(Environment.NewLine, _filter.Authors ?? Array.Empty<string>());
+
+        base.OnInitialized();
+    }
+
+    private void OnSend()
+    {
+        Console.WriteLine($"Sending filter to {NostrRelay.Communicator.Url.Host}");
+
+        _filter.Authors = (_authorsText ?? string.Empty)
+            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(TryConvertNpub)
+            .ToArray();
+
+        NostrRelay.Client.Send(new NostrRequest(_subscription, _filter));
+    }
+
+    private void OnCloseSubscription()
+    {
+        Console.WriteLine($"Sending subscription '{_subscription}' close to {NostrRelay.Communicator.Url.Host}");
+
+        NostrRelay.Client.Send(new NostrCloseRequest(_subscription));
+    }
+
+    private void SetSince(ChangeEventArgs args)
+    {
+        _hoursSince = Convert.ToInt32(args.Value);
+        _filter.Since = DateTime.Now.AddHours(_hoursSince);
+    }
+
+    private void SetUntil(ChangeEventArgs args)
+    {
+        _hoursUntil = Convert.ToInt32(args.Value);
+        _filter.Until = DateTime.Now.AddHours(_hoursUntil);
+    }
+
+    private void HandleEvent(NostrEventResponse response)
+    {
+        var ev = response.Event;
+        Console.WriteLine($"{ev?.Kind}: {ev?.Content}");
+    }
+
+    private string TryConvertNpub(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return key;
+        }
+
+        try
+        {
+            return NostrConverter.ToHex(key, out _) ?? key;
+        }
+        catch (Exception e)
+        {
+            return key;
+        }
+    }
+}

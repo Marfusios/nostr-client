@@ -1,0 +1,73 @@
+﻿@using System.Reactive.Linq
+@inherits LayoutComponentBase
+@inject RelayConnection NostrRelay
+
+<div class="container">
+    <div class="siteheader">
+        <a class="logo" href="/">
+            <p class="logo-text">
+                <span>Nostr</span>Debug
+            </p>
+        </a>
+        
+        <div class="m-left-auto m-r-3">
+            
+            @if (_isRelayConnected)
+            {
+                <FluentIcon style="vertical-align: middle" Name="@FluentIcons.CloudCheckmark" Size="@IconSize.Size24" Variant="@IconVariant.Regular" Color="@Color.Success" />
+            }
+            else
+            {
+                <FluentIcon style="vertical-align: middle" Name="@FluentIcons.CloudDismiss" Size="@IconSize.Size24" Variant="@IconVariant.Regular" Color="@Color.Error" />
+            }
+
+        </div>
+
+        <div class="git-repo">
+            <a href="https://github.com/marfusios/nostr-client-websocket">Github Repository</a>
+        </div>
+    </div>
+    <div class="main">
+        <div class="navigation">
+            <NavMenu />
+        </div>
+
+        <div class="content">
+            <main>
+                <article class="content px-4">
+                   
+                    <ErrorBoundary>
+                        <ChildContent>
+                            @Body
+                        </ChildContent>
+                        <ErrorContent Context="ex">
+                            <p class="error">@ex.Message</p>
+                        </ErrorContent>
+                    </ErrorBoundary>
+                </article>
+            </main>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private bool _isRelayConnected;
+
+    protected override Task OnInitializedAsync()
+    {
+        _isRelayConnected = NostrRelay.IsConnected;
+        return base.OnInitializedAsync();
+    }
+
+    protected override void OnInitialized()
+    {
+        NostrRelay.ConnectionStream.Subscribe(connected =>
+        {
+            _isRelayConnected = connected;
+            StateHasChanged();
+        });
+
+        base.OnInitialized();
+    }
+}
