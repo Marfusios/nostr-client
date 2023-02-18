@@ -6,6 +6,7 @@
 @using System.Reactive.Linq
 @using Newtonsoft.Json
 @using Newtonsoft.Json.Linq
+@using Nostr.Client.Responses.Contacts
 @using Nostr.Client.Responses.Metadata
 @using QuickGridPagination = Microsoft.AspNetCore.Components.QuickGrid.PaginationState
 @using FluentPagination = Microsoft.Fast.Components.FluentUI.PaginationState;
@@ -128,17 +129,32 @@
                 </FluentDataGrid>
                 <FluentPaginator Value="@_pagination" />
                 
+                <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearEvents">
+                    Clear
+                    <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
+                </FluentButton>
+
                 <FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
                     <div class="dialog-content">
-                        <h2>@_selectedEvent?.Kind</h2>
-                        @if (_selectedEvent is NostrMetadataEvent)
+                        <PageHeader Title3="@_selectedEvent?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
+                        @if (_selectedEvent is NostrMetadataEvent or NostrContactEvent)
                         {
                             <pre>@FormatEventContent(_selectedEvent?.Content)</pre>
                         }
                         else
                         {
-                            <p>@FormatEventContent(_selectedEvent?.Content)</p>
+                            <p style="font-size: 18px">@FormatEventContent(_selectedEvent?.Content)</p>
                         }
+                        
+                        <p>
+                            <strong>Id</strong>
+                            <div>@_selectedEvent?.Id</div>
+                        </p>
+                        <p>
+                            <strong>Author</strong>
+                            <div>@_selectedEvent?.Pubkey</div>
+                            <div><a class="clear-link" href="https://snort.social/p/@FormatToNpub(_selectedEvent?.Pubkey)" target="_blank">@FormatToNpub(_selectedEvent?.Pubkey)</a></div>
+                        </p>
                     </div>
                 </FluentDialog>
             </div>
@@ -337,6 +353,12 @@
         }
     }
 
+    private void OnClearEvents()
+    {
+        _receivedEvents.Clear();
+        _events = _receivedEvents.AsQueryable();
+    }
+
     private static string FormatEventContent(string? content)
     {
         if (string.IsNullOrWhiteSpace(content))
@@ -352,4 +374,16 @@
             return content;
         }
     }
+
+    private static string? FormatToNpub(string? hexKey)
+    {
+        try
+        {
+            return NostrConverter.ToNpub(hexKey);
+        }
+        catch (Exception)
+        {
+            return string.Empty;
+        }
+    } 
 }

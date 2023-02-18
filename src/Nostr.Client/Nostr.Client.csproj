@@ -4,6 +4,30 @@
 		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+
+		<PackageId>Nostr.Client</PackageId>
+
+		<Version>1.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+
+		<Authors>Mariusz Kotas</Authors>
+		<Description>Client for Nostr protocol</Description>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageReleaseNotes></PackageReleaseNotes>
+		<Copyright>Copyright 2023 Mariusz Kotas. All rights reserved.</Copyright>
+		<PackageTags>Nostr relay websockets websocket client bitcoin</PackageTags>
+		<PackageLicenseUrl>https://github.com/Marfusios/nostr-client/blob/master/LICENSE</PackageLicenseUrl>
+		<PackageProjectUrl>https://github.com/Marfusios/nostr-client</PackageProjectUrl>
+		<PackageIconUrl>https://d2a49kd54np2tu.cloudfront.net/fit-in/1024x600/nostr_35ebe9479b.jpg</PackageIconUrl>
+		<RepositoryUrl>https://github.com/Marfusios/nostr-client</RepositoryUrl>
+		<RepositoryType>Git</RepositoryType>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 
 	<ItemGroup>

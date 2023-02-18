@@ -17,6 +17,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nostr.Client.Sample.Blazor"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nostr.Client.Tests", "test\Nostr.Client.Tests\Nostr.Client.Tests.csproj", "{12E2FA07-9671-4FBA-B1EC-0026768D810A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B736BE6C-B754-4ADF-A835-AC6BDEB9CF1C}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		.github\workflows\gh-pages.yml = .github\workflows\gh-pages.yml
+		LICENSE = LICENSE
+		nostr.jpg = nostr.jpg
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

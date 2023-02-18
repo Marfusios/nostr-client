@@ -1,204 +1,115 @@
-![Logo](bitfinex_logo.png)
-# Bitfinex & Ethfinex websocket API client 
-[![Build Status](https://travis-ci.org/Marfusios/bitfinex-client-websocket.svg?branch=master)](https://travis-ci.org/Marfusios/bitfinex-client-websocket) [![NuGet version](https://badge.fury.io/nu/Bitfinex.Client.Websocket.svg)](https://badge.fury.io/nu/Bitfinex.Client.Websocket) [![NuGet downloads](https://img.shields.io/nuget/dt/Bitfinex.Client.Websocket)](https://www.nuget.org/packages/Bitfinex.Client.Websocket)
+![Logo](nostr.png)
+# Nostr client 
+[![NuGet version](https://badge.fury.io/nu/Nostr.Client.svg)](https://badge.fury.io/nu/Nostr.Client) [![NuGet downloads](https://img.shields.io/nuget/dt/Nostr.Client)](https://www.nuget.org/packages/Nostr.Client)
 
-This is a C# implementation of the Bitfinex & Ethfinex websocket API version 2.0 found here:
+This is a C# implementation of the Nostr protocol found here:
 
-https://bitfinex.readme.io/v2/docs ([Ethfinex](https://www.ethfinex.com/api_docs))
+https://github.com/nostr-protocol/nips
 
-You can **do** almost **everything with** provided **websocket API**. Using REST API is unnecessary! 
-As a benefit, you will get real-time data and fast execution of your commands. 
+Nostr protocol is based on websocket communication. 
+This library keeps a reliable connection to get real-time data and fast execution of your commands. 
 
-[Releases and breaking changes](https://github.com/Marfusios/bitfinex-client-websocket/releases)
+[Releases and breaking changes](https://github.com/Marfusios/nostr-client/releases)
 
 ### License: 
     Apache License 2.0
 
 ### Features
 
-* installation via NuGet ([Bitfinex.Client.Websocket](https://www.nuget.org/packages/Bitfinex.Client.Websocket))
-* public and authenticated API
-* targeting .NET Standard 2.0 (.NET Core, Linux/MacOS compatible)
+* installation via NuGet ([Nostr.Client](https://www.nuget.org/packages/Nostr.Client))
+* targeting .NET 6.0 and higher (.NET Core, Linux/MacOS compatible)
 * reactive extensions ([Rx.NET](https://github.com/Reactive-Extensions/Rx.NET))
-* integrated logging abstraction ([LibLog](https://github.com/damianh/LibLog))
 
 ### Usage
 
 ```csharp
 var exitEvent = new ManualResetEvent(false);
-var url = BitfinexValues.ApiWebsocketUrl;
+var url = new Uri("wss://relay.damus.io");
 
-using (var communicator = new BitfinexWebsocketCommunicator(url))
+using var communicator = new NostrWebsocketCommunicator(url);
+using var client = new NostrWebsocketClient(communicator, null);
+
+client.Streams.EventStream.Subscribe(response =>
 {
-    using (var client = new BitfinexWebsocketClient(communicator))
-    {
-        client.Streams.InfoStream.Subscribe(info =>
-        {
-            Log.Information($"Info received, reconnection happened, resubscribing to streams");
+    var ev = response.Event;
+    Log.Information("{kind}: {content}", ev?.Kind, ev?.Content)
             
-            await client.Send(new PingRequest() {Cid = 123456});
-            //await client.Send(new TickerSubscribeRequest("BTC/USD"));
-        });
-
-        client.Streams.PongStream.Subscribe(pong =>
-        {
-            Console.WriteLine($"Pong received! Id: {pong.Cid}") // Pong received! Id: 123456
-            exitEvent.Set();
-        });
-
-        await communicator.Start();
-
-        exitEvent.WaitOne(TimeSpan.FromSeconds(30));
+    if(ev is NostrMetadataEvent evm) {
+        Log.Information("Name: {name}, about: {about}", evm.Metadata?.Name, evm.Metadata?.About);
     }
-}
+});
+
+await communicator.Start();
+
+exitEvent.WaitOne(TimeSpan.FromSeconds(30));
 ```
 
 More usage examples:
-* integration tests ([link](test_integration/Bitfinex.Client.Websocket.Tests.Integration))
-* console sample ([link](test_integration/Bitfinex.Client.Websocket.Sample/Program.cs))
-* desktop sample ([link](test_integration/Bitfinex.Client.Websocket.Sample.WinForms))
+* Console sample ([link](test_integration/Nostr.Client.Sample.Console/Program.cs))
+* Blazor sample ([link](test_integration/Nostr.Client.Sample.Blazor), [deployed](https://nostr.mkotas.cz))
 
-### API coverage
+### NIP's coverage
 
-| PUBLIC                 |    Covered     |
-|------------------------|:--------------:|
-| Info                   |  ✔            |
-| Ping-Pong              |  ✔            |
-| Errors                 |  ✔            |
-| Configuration          |  ✔            |
-| Channel subscribing    |  ✔            |
-| Channel unsubscribing  |  ✔            |
-| Ticker                 |  ✔            |
-| Ticker - funding       |                |
-| Trades                 |  ✔            |
-| Trades - funding       |  ✔            |
-| Books                  |  ✔            |
-| Books - funding        |  ✔            |
-| Raw books              |  ✔            |
-| Raw books - funding    |  ✔            |
-| Candles                |  ✔            |
-| Funding                |  ✔            |
-| Sequencing             |  ✔            |
-| Server timestamp       |  ✔            |
-| Book checksum          |  ✔            |
-
-| AUTHENTICATED          |    Covered     |
-|------------------------|:--------------:|
-| Account info           |  ✔            |
-| Orders                 |  ✔            |
-| Positions              |  ✔            |
-| Trades                 |  ✔            |
-| Funding                |                |
-| Wallets                |  ✔            |
-| Balance                |  ✔            |
-| Notifications          |  ✔            |
-
-| AUTHENTICATED - INPUT  |    Covered     |
-|------------------------|:--------------:|
-| New order              |  ✔            |
-| Update order           |  ✔            |
-| Cancel order           |  ✔            |
-| Cancel order multi     |  ✔            |
-| Order multi-op         |                |
-| New offer              |                |
-| Cancel offer           |                |
-| Calc                   |  ✔            |
+- [x] NIP-01: Basic protocol flow description
+- [x] NIP-02: Contact List and Petnames (No petname support)
+- [ ] NIP-03: OpenTimestamps Attestations for Events
+- [ ] NIP-04: Encrypted Direct Message
+- [ ] NIP-05: Mapping Nostr keys to DNS-based internet identifiers
+- [ ] NIP-06: Basic key derivation from mnemonic seed phrase
+- [ ] NIP-07: `window.nostr` capability for web browsers
+- [ ] NIP-08: Handling Mentions
+- [ ] NIP-09: Event Deletion
+- [ ] NIP-10: Conventions for clients' use of `e` and `p` tags in text events
+- [ ] NIP-11: Relay Information Document
+- [ ] NIP-12: Generic Tag Queries
+- [ ] NIP-13: Proof of Work
+- [ ] NIP-14: Subject tag in text events
+- [x] NIP-15: End of Stored Events Notice
+- [x] NIP-19: bech32-encoded entities
+- [ ] NIP-20: Command Results
+- [ ] NIP-21: `nostr:` Protocol handler (`web+nostr`)
+- [ ] NIP-25: Reactions
+- [ ] NIP-26: Delegated Event Signing (Display delegated signings only)
+- [ ] NIP-28: Public Chat
+- [ ] NIP-36: Sensitive Content
+- [ ] NIP-40: Expiration Timestamp
+- [ ] NIP-42: Authentication of clients to relays
+- [ ] NIP-50: Search
+- [ ] NIP-51: Lists
+- [ ] NIP-65: Relay List Metadata
 
 **Pull Requests are welcome!**
-
-### Other websocket libraries
-
-<table>
-<tr>
-
-<td>
-<a href="https://github.com/Marfusios/crypto-websocket-extensions"><img src="https://raw.githubusercontent.com/Marfusios/crypto-websocket-extensions/master/cwe_logo.png" height="80px"></a>
-<br />
-<a href="https://github.com/Marfusios/crypto-websocket-extensions">Extensions</a>
-<br />
-<span>All order books together, etc.</span>
-</td>
-
-<td>
-<a href="https://github.com/Marfusios/bitmex-client-websocket"><img src="https://user-images.githubusercontent.com/1294454/27766319-f653c6e6-5ed4-11e7-933d-f0bc3699ae8f.jpg"></a>
-<br />
-<a href="https://github.com/Marfusios/bitmex-client-websocket">Bitmex</a>
-</td>
-
-<td>
-<a href="https://github.com/Marfusios/binance-client-websocket"><img src="https://user-images.githubusercontent.com/1294454/29604020-d5483cdc-87ee-11e7-94c7-d1a8d9169293.jpg"></a>
-<br />
-<a href="https://github.com/Marfusios/binance-client-websocket">Binance</a>
-</td>
-
-<td>
-<a href="https://github.com/Marfusios/coinbase-client-websocket"><img src="https://user-images.githubusercontent.com/1294454/41764625-63b7ffde-760a-11e8-996d-a6328fa9347a.jpg"></a>
-<br />
-<a href="https://github.com/Marfusios/coinbase-client-websocket">Coinbase</a>
-</td>
-
-</tr>
-</table>
-
-### Placing orders
-
-Bitfinex supports input authenticated API via websockets. 
-You are able to place, update, cancel orders. Also via multi batch. 
-Usage: 
-
-```csharp
-// placing buy
-client.Send(new NewOrderRequest(gid: 33, cid: 100, "ETH/USD", OrderType.Limit, 0.2, 163) {Flags = OrderFlag.PostOnly});
-
-// palcing sell
-client.Send(new NewOrderRequest(gid: 33, cid: 200, "ETH/USD", OrderType.Limit, -0.2, 188) { Flags = OrderFlag.PostOnly });
-
-// updating by client id
-client.Send(new UpdateOrderRequest(new CidPair(100, DateTime.UtcNow)) { Amount = 0.3, Price = 161});
-
-// canceling by client id
-client.Send(new CancelOrderRequest(new CidPair(100, DateTime.UtcNow)));
-
-// other canceling options
-client.Send(CancelMultiOrderRequest.CancelEverything());
-client.Send(CancelMultiOrderRequest.CancelGroup(33));
-client.Send(new CancelMultiOrderRequest(new[]
-{
-    new CidPair(100, DateTime.UtcNow),
-    new CidPair(200, DateTime.UtcNow)
-}));
-```
 
 ### Reconnecting
 
 There is a built-in reconnection which invokes after 1 minute (default) of not receiving any messages from the server. It is possible to configure that timeout via `communicator.ReconnectTimeoutMs`. Also, there is a stream `ReconnectionHappened` which sends information about a type of reconnection. However, if you are subscribed to low rate channels, it is very likely that you will encounter that timeout - higher the timeout to a few minutes or call `PingRequest` by your own every few seconds. 
 
-In the case of Bitfinex outage, there is a built-in functionality which slows down reconnection requests (could be configured via `communicator.ErrorReconnectTimeoutMs`, the default is 1 minute).
+In the case of Nostr relay outage, there is a built-in functionality which slows down reconnection requests (could be configured via `communicator.ErrorReconnectTimeoutMs`, the default is 1 minute).
 
-Beware that you **need to resubscribe to channels** after reconnection happens. You should subscribe to `Streams.InfoStream`, `Streams.AuthenticationStream` and send subscriptions requests (see [#12](https://github.com/Marfusios/bitfinex-client-websocket/issues/12) for example). 
+Beware that you **need to resubscribe to channels** after reconnection happens. 
 
-### Backtesting
+### Testing
 
-The library is prepared for backtesting. The dependency between `Client` and `Communicator` is via abstraction `IBitfinexCommunicator`. There are two communicator implementations: 
-* `BitfinexWebsocketCommunicator` - a realtime communication with Bitfinex via websocket API.
-* `BitfinexFileCommunicator` - a simulated communication, raw data are loaded from files and streamed. If you are **interested in buying historical raw data** (trades, order book events), contact me.
+The library is prepared for replay testing. The dependency between `Client` and `Communicator` is via abstraction `INostrCommunicator`. There are two communicator implementations: 
+* `NostrWebsocketCommunicator` - a realtime communication with Nostr relay.
+* `NostrFileCommunicator` - a simulated communication, raw data are loaded from files and streamed.
 
-Feel free to implement `IBitfinexCommunicator` on your own, for example, load raw data from database, cache, etc. 
+Feel free to implement `INostrCommunicator` on your own, for example, load raw data from database, cache, etc. 
 
 Usage: 
 
 ```csharp
-var communicator = new BitfinexFileCommunicator();
+var communicator = new NostrFileCommunicator();
 communicator.FileNames = new[]
 {
-    "data/bitfinex_raw_2018-11-12.txt"
+    "data/nostr-data.txt"
 };
-communicator.Delimiter = ";;";
+communicator.Delimiter = "\n";
 
-var client = new BitfinexWebsocketClient(communicator);
-client.Streams.TradesStream.Subscribe(trade =>
+var client = new NostrWebsocketClient(communicator);
+client.Streams.EventStream.Subscribe(trade =>
 {
-    // do something with trade
+    // do something with an event
 });
 
 await communicator.Start();
@@ -218,13 +129,13 @@ Every subscription code is called on a main websocket thread. Every subscription
 ```csharp
 client
     .Streams
-    .TradesStream
-    .Subscribe(trade => { code1 });
+    .EventStream
+    .Subscribe(event => { code1 });
 
 client
     .Streams
-    .BookStream
-    .Subscribe(book => { code2 });
+    .NoticeStream
+    .Subscribe(notice => { code2 });
 
 // 'code1' and 'code2' are called in a correct order, according to websocket flow
 // ----- code1 ----- code1 ----- ----- code1
@@ -238,15 +149,15 @@ Every single subscription code is called on a separate thread. Every single subs
 ```csharp
 client
     .Streams
-    .TradesStream
+    .EventStream
     .ObserveOn(TaskPoolScheduler.Default)
-    .Subscribe(trade => { code1 });
+    .Subscribe(event => { code1 });
 
 client
     .Streams
-    .BookStream
+    .NoticeStream
     .ObserveOn(TaskPoolScheduler.Default)
-    .Subscribe(book => { code2 });
+    .Subscribe(notice => { code2 });
 
 // 'code1' and 'code2' are called in parallel, do not follow websocket flow
 // ----- code1 ----- code1 ----- code1 -----
@@ -261,17 +172,17 @@ In case you want to run your subscription code on the separate thread but still 
 private static readonly object GATE1 = new object();
 client
     .Streams
-    .TradesStream
+    .EventStream
     .ObserveOn(TaskPoolScheduler.Default)
     .Synchronize(GATE1)
-    .Subscribe(trade => { code1 });
+    .Subscribe(event => { code1 });
 
 client
     .Streams
-    .BookStream
+    .NoticeStream
     .ObserveOn(TaskPoolScheduler.Default)
     .Synchronize(GATE1)
-    .Subscribe(book => { code2 });
+    .Subscribe(notice => { code2 });
 
 // 'code1' and 'code2' are called concurrently and follow websocket flow
 // ----- code1 ----- code1 ----- ----- code1
@@ -286,8 +197,8 @@ so it won't block stream execution and cause sometimes undesired concurrency. Fo
 ```csharp
 client
     .Streams
-    .TradesStream
-    .Subscribe(async trade => {
+    .EventStream
+    .Subscribe(async event => {
         // do smth 1
         await Task.Delay(5000); // waits 5 sec, could be HTTP call or something else
         // do smth 2
@@ -300,8 +211,8 @@ If you want to buffer messages and process them one-by-one, then use this:
 ```csharp
 client
     .Streams
-    .TradesStream
-    .Select(trade => Observable.FromAsync(async () => {
+    .EventStream
+    .Select(event => Observable.FromAsync(async () => {
         // do smth 1
         await Task.Delay(5000); // waits 5 sec, could be HTTP call or something else
         // do smth 2
@@ -315,8 +226,8 @@ If you want to process them concurrently (avoid synchronization), then use this
 ```csharp
 client
     .Streams
-    .TradesStream
-    .Select(trade => Observable.FromAsync(async () => {
+    .EventStream
+    .Select(event => Observable.FromAsync(async () => {
         // do smth 1
         await Task.Delay(5000); // waits 5 sec, could be HTTP call or something else
         // do smth 2
@@ -331,23 +242,7 @@ client
 More info on [Github issue](https://github.com/dotnet/reactive/issues/459).
 
 Don't worry about websocket connection, those sequential execution via `.Concat()` or `.Merge(1)` has no effect on receiving messages. 
-It won't affect receiving thread, only buffers messages inside `TradesStream`. 
+It won't affect receiving thread, only buffers messages inside `EventStream`. 
 
 But beware of [producer-consumer problem](https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem) when the consumer will be too slow. Here is a [StackOverflow issue](https://stackoverflow.com/questions/11010602/with-rx-how-do-i-ignore-all-except-the-latest-value-when-my-subscribe-method-is) 
 with an example how to ignore/discard buffered messages and always process only the last one. 
-
-
-### Desktop application (WinForms or WPF)
-
-Due to the large amount of questions about integration of this library into a desktop application (old full .NET Framework), I've prepared WinForms example ([link](test_integration/Bitfinex.Client.Websocket.Sample.WinForms)). 
-
-![WinForms example screen](test_integration/Bitfinex.Client.Websocket.Sample.WinForms/winforms_example_app.png)
-
-### Available for help
-I do consulting, please don't hesitate to contact me if you have a custom solution you would like me to implement ([web](http://mkotas.cz/), 
-<m@mkotas.cz>)
-
-Donations gratefully accepted.
-* [![Donate with Bitcoin](https://en.cryptobadges.io/badge/small/1HfxKZhvm68qK3gE8bJAdDBWkcZ2AFs9pw)](https://en.cryptobadges.io/donate/1HfxKZhvm68qK3gE8bJAdDBWkcZ2AFs9pw)
-* [![Donate with Litecoin](https://en.cryptobadges.io/badge/small/LftdENE8DTbLpV6RZLKLdzYzVU82E6dz4W)](https://en.cryptobadges.io/donate/LftdENE8DTbLpV6RZLKLdzYzVU82E6dz4W)
-* [![Donate with Ethereum](https://en.cryptobadges.io/badge/small/0xb9637c56b307f24372cdcebd208c0679d4e48a47)](https://en.cryptobadges.io/donate/0xb9637c56b307f24372cdcebd208c0679d4e48a47)

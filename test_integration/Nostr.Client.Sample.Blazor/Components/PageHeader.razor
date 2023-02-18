@@ -1,8 +1,25 @@
-﻿<PageTitle>@Title</PageTitle>
+﻿@if (DisplayBrowserTitle)
+{
+    <PageTitle>@Title</PageTitle>
+}
 
 <div class="page-title-group">
-    <h1 class="page-title">@Title</h1>
-    <p class="page-subtitle">@Subtitle</p>
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <h1 class="page-title">@Title</h1>
+    }
+    @if (!string.IsNullOrWhiteSpace(Title2))
+    {
+        <h2 class="page-title">@Title2</h2>
+    }
+    @if (!string.IsNullOrWhiteSpace(Title3))
+    {
+        <h3 class="page-title">@Title3</h3>
+    }
+    @if (!string.IsNullOrWhiteSpace(Subtitle))
+    {
+        <p class="page-subtitle">@Subtitle</p>
+    }
     <FluentDivider style="width: 100%"></FluentDivider>
 </div>
 
@@ -11,5 +28,15 @@
     public string? Title { get; set; }
 
     [Parameter]
+    public string? Title2 { get; set; }
+
+    [Parameter]
+    public string? Title3 { get; set; }
+
+    [Parameter]
     public string? Subtitle { get; set; }
+
+    [Parameter]
+    public bool DisplayBrowserTitle { get; set; } = true;
+
 }
