@@ -21,13 +21,9 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: dotnet test --no-restore --verbosity normal
+    - name: Pack Nostr.Client project
+      run: dotnet pack src/Nostr.Client/Nostr.Client.csproj --no-build --configuration Release --include-symbols -p:SymbolPackageFormat=snupkg -o .
     - name: Publish Nostr.Client (NuGet)
-      uses: brandedoutcast/publish-nuget@v2.5.5
-      with:
-          PROJECT_FILE_PATH: src/Nostr.Client/Nostr.Client.csproj
-          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
-          VERSION_FILE_PATH: Directory.Build.props
+      run: dotnet nuget push *.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source "https://api.nuget.org/v3/index.json" --skip-duplicate
     #- name: Publish Nostr.Client (Github)
-    #  run: |
-    #    dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username ${{ github.repository_owner }} --password ${{ github.token }} --store-password-in-clear-text
-    #    dotnet nuget push src/**/*.nupkg --source github --skip-duplicate
+    #  run: dotnet nuget push *.nupkg --api-key ${{secrets.PUBLISH_TO_GITHUB_TOKEN}} --source "https://nuget.pkg.github.com/VAllens/index.json" --skip-duplicate

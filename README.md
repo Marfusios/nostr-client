@@ -239,7 +239,7 @@ client
     .Subscribe();
 ```
 
-More info on [Github issue](https://github.com/dotnet/reactive/issues/459).
+More info in [Github issue](https://github.com/dotnet/reactive/issues/459).
 
 Don't worry about websocket connection, those sequential execution via `.Concat()` or `.Merge(1)` has no effect on receiving messages. 
 It won't affect receiving thread, only buffers messages inside `EventStream`. 
