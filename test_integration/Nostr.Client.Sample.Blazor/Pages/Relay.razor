@@ -36,8 +36,12 @@
     </Stack>
 
     <div>
-        <h4>History</h4>
+        <div>
+            <pre>Received messages: @_receivedMessagesCount</pre>
+        </div>
         
+        <h4>History</h4>
+
         <ul>
             @foreach (var item in _history.ToArray().Reverse())
             {
@@ -54,16 +58,24 @@
     private string _selectedRelayUrl = string.Empty;
     private readonly List<string> _history = new();
 
+    private int _receivedMessagesCount;
+
     protected override void OnInitialized()
     {
         _selectedRelayUrl = NostrRelay.RelayUrl;
         NostrRelay.HistoryStream.Subscribe(OnHistory);
+        NostrRelay.Communicator.MessageReceived.Subscribe(_ =>
+        {
+            _receivedMessagesCount++;
+            StateHasChanged();
+        });
 
         base.OnInitialized();
     }
 
     private async Task OnConnect()
     {
+        _receivedMessagesCount = 0;
         _selectedRelayUrl = _selectedRelayUrl.Replace(" ", string.Empty).Trim();
         await NostrRelay.Connect(_selectedRelayUrl);
     }

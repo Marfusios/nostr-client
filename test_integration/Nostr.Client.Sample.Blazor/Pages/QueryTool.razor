@@ -117,7 +117,7 @@
                             @*<FluentIcon Name="@FluentIcons.Glasses" Size="@IconSize.Size16" Color="Color.Neutral" Variant="IconVariant.Regular" />*@
                         </FluentButton>
                     </Microsoft.Fast.Components.FluentUI.TemplateColumn>
-                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Created" Property="@(p => p.CreatedAt)" Format="MM-dd HH:mm:ss" Sortable="true"/>
+                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Created" Property="@(p => p.CreatedAt)" Format="HH:mm:ss" Sortable="true"/>
                     <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true"/>
                     <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Id" Sortable="true">
                         <span>@context.Id[..4]..@context.Id[^4..]</span>
@@ -148,7 +148,14 @@
                         
                         <p>
                             <strong>Id</strong>
-                            <div>@_selectedEvent?.Id</div>
+                            @if (_selectedEvent?.Kind == NostrKind.ShortTextNote)
+                            {
+                                <div><a class="clear-link" href="https://snort.social/e/@FormatToNote(_selectedEvent?.Id)" target="_blank">@FormatToNote(_selectedEvent?.Id)</a></div>
+                            }
+                            else
+                            {
+                                <div>@_selectedEvent?.Id</div>
+                            }
                         </p>
                         <p>
                             <strong>Author</strong>
@@ -375,11 +382,14 @@
         }
     }
 
-    private static string? FormatToNpub(string? hexKey)
+    private static string? FormatToNpub(string? hexKey) => FormatToBech32(hexKey, "npub");
+    private static string? FormatToNote(string? hexKey) => FormatToBech32(hexKey, "note");
+
+    private static string? FormatToBech32(string? hexKey, string hrp)
     {
         try
         {
-            return NostrConverter.ToNpub(hexKey);
+            return NostrConverter.ToBech32(hexKey, hrp);
         }
         catch (Exception)
         {

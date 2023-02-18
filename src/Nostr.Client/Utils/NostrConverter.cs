@@ -41,5 +41,13 @@
         {
             return ToBech32(hexKey, "nsec");
         }
+        
+        /// <summary>
+        /// Convert hex key into Bech32 'note1xxx' representation
+        /// </summary>
+        public static string? ToNote(string? hexKey)
+        {
+            return ToBech32(hexKey, "note");
+        }
     }
 }

@@ -8,6 +8,7 @@
         Contacts = 3,
         EncryptedDm = 4,
         EventDeletion = 5,
+        Reserved = 6,
         Reaction = 7,
 
         // nip-28 public chat
