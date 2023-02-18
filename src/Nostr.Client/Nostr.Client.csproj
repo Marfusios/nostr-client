@@ -33,4 +33,10 @@
 		<PackageReference Include="Websocket.Client" Version="4.4.43" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Update="readme.md">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>
