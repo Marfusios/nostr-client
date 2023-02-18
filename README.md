@@ -1,6 +1,6 @@
 ![Logo](nostr.png)
 # Nostr client 
-[![NuGet version](https://badge.fury.io/nu/Nostr.Client.svg)](https://badge.fury.io/nu/Nostr.Client) [![NuGet downloads](https://img.shields.io/nuget/dt/Nostr.Client)](https://www.nuget.org/packages/Nostr.Client)
+[![.NET Core](https://github.com/Marfusios/nostr-client/actions/workflows/dotnet-core.yml/badge.svg)](https://github.com/Marfusios/nostr-client/actions/workflows/dotnet-core.yml) [![NuGet version](https://badge.fury.io/nu/Nostr.Client.svg)](https://badge.fury.io/nu/Nostr.Client) [![NuGet downloads](https://img.shields.io/nuget/dt/Nostr.Client)](https://www.nuget.org/packages/Nostr.Client)
 
 This is a C# implementation of the Nostr protocol found here:
 
