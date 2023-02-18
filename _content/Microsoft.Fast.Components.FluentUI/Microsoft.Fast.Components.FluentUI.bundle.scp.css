@@ -1,0 +1,176 @@
+/* _content/Microsoft.Fast.Components.FluentUI/Components/DataGrid/FluentDataGrid.razor.rz.scp.css */
+fluent-data-grid[b-rcbc18ov7b] {
+    --col-gap: 1rem;
+}
+
+.col-options[b-rcbc18ov7b] {
+    position: absolute;
+    top: 2.2rem;
+    background: var(--neutral-layer-2);
+    border: 1px solid var(--neutral-layer-3);
+    border-radius: 0.3rem;
+    box-shadow: 0 3px 8px 1px var(--neutral-layer-4);
+    padding: 1rem;
+    z-index: 1;
+}
+
+[dir=rtl] .col-options[b-rcbc18ov7b] {
+    left: unset;
+    
+}
+
+.col-justify-end .col-options[b-rcbc18ov7b] {
+    left: unset;
+    right: 15px;
+}
+
+[dir=rtl] .col-justify-end .col-options[b-rcbc18ov7b] {
+    right: unset;
+    left: 15px;
+}
+
+[b-rcbc18ov7b] > fluent-data-grid-row > fluent-data-grid-cell.grid-cell-placeholder:after {
+    content: '\2026'; /*horizontal ellipsis*/
+    opacity: 0.75;
+}
+
+
+
+[b-rcbc18ov7b] .col-width-draghandle {
+    height: auto;
+    width: 4px;
+    right: calc(var(--col-gap)/2 - 0.5rem);
+    /*margin: 0 calc(var(--design-unit) * 1px);*/
+    border-top: none;
+    border-left: calc(var(--stroke-width) * 1px) solid var(--neutral-stroke-divider-rest);
+    cursor: col-resize;
+}
+
+    .col-width-draghandle:hover[b-rcbc18ov7b], .col-width-draghandle:active[b-rcbc18ov7b] {
+        background: var(--neutral-stroke-divider-rest);
+    }
+
+/* _content/Microsoft.Fast.Components.FluentUI/Components/DataGrid/FluentDataGridCell.razor.rz.scp.css */
+fluent-data-grid-cell[b-58jkn3no8z] {
+    text-overflow: ellipsis;
+}
+
+.column-header[b-58jkn3no8z] {
+    display: flex;
+    align-self: center;
+    padding-inline: 0;
+}
+
+    .column-header.col-justify-end[b-58jkn3no8z] {
+        width: 100%;
+        padding: 0;
+        justify-content:end;
+    }
+
+    .column-header.col-justify-center[b-58jkn3no8z] {
+        width: 100%;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .column-header[b-58jkn3no8z] >  .col-sort-button {
+        width: 100%;
+        padding-inline-end: 5px;
+    }
+
+    .column-header.col-justify-end[b-58jkn3no8z]  .col-title-text {
+        text-align: end;
+    }
+
+    .column-header.col-justify-end[b-58jkn3no8z]  .col-sort-button {
+        justify-content: end;
+    }
+
+    .column-header.col-justify-center[b-58jkn3no8z]  .col-title-text {
+        text-align: center;
+    }
+
+    .column-header.col-justify-end[b-58jkn3no8z]  .col-sort-button {
+        justify-content: end;
+        text-align: end;
+    }
+
+[b-58jkn3no8z] .col-sort-button::part(control) {
+    align-items: center;
+    justify-content: start;
+}
+
+.col-justify-center[b-58jkn3no8z]  .col-sort-button::part(control) {
+    justify-content: center;
+}
+
+.col-justify-end[b-58jkn3no8z]  .col-sort-button::part(control) {
+    justify-content: end;
+}
+
+.col-justify-center[b-58jkn3no8z] {
+    justify-self: center;
+}
+
+.col-justify-end[b-58jkn3no8z] {
+    justify-self: end;
+    padding-inline-end: 20px;
+}
+
+    .col-justify-end .col-title[b-58jkn3no8z] {
+        justify-content: end;
+    }
+
+[b-58jkn3no8z] .col-title {
+    padding: 0 calc((12 + (var(--design-unit) * 2 * var(--density))) * 1px);
+    display: flex;
+    align-items: center;
+}
+
+[b-58jkn3no8z] .col-title-text {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+
+
+/* _content/Microsoft.Fast.Components.FluentUI/Components/DataGrid/FluentDataGridRow.razor.rz.scp.css */
+.header[b-10fjv1tx5s] {
+    padding: 0;
+}
+/* _content/Microsoft.Fast.Components.FluentUI/Components/Pagination/FluentPaginator.razor.rz.scp.css */
+.paginator[b-ni865qjjdp] {
+    display: flex;
+    /*border-top: 1px solid var(--neutral-stroke-divider-rest);*/
+    margin-top: 0.5rem;
+    padding: 0.25rem 0;
+    align-items: center;
+}
+
+.pagination-text[b-ni865qjjdp] {
+    margin: 0 0.5rem;
+}
+
+.paginator-nav[b-ni865qjjdp] {
+    padding: 0; 
+    display: flex;
+    margin-inline-start: auto;
+    margin-inline-end: 0;
+    gap: 0.5rem;
+    align-items: center;
+    background-color: var(--neutral-layer-1);
+}
+
+    
+
+/* _content/Microsoft.Fast.Components.FluentUI/Components/Radio/FluentRadio.razor.rz.scp.css */
+fluent-radio[b-0z16jcyr52] {
+    margin: calc(var(--design-unit) * 1px) 0;
+}
+/* _content/Microsoft.Fast.Components.FluentUI/Components/Tabs/FluentTab.razor.rz.scp.css */
+fluent-tab[disabled][b-8k0nilmxyx] {
+    cursor: not-allowed;
+    color: var(--neutral-foreground-hint)
+}
