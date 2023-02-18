@@ -48,6 +48,8 @@ More usage examples:
 * Console sample ([link](test_integration/Nostr.Client.Sample.Console/Program.cs))
 * Blazor sample ([link](test_integration/Nostr.Client.Sample.Blazor), [deployed](https://nostr.mkotas.cz))
 
+![image](https://user-images.githubusercontent.com/3494837/219864079-b044327a-3db5-4f22-b738-3160a561b5f3.png)
+
 ### NIP's coverage
 
 - [x] NIP-01: Basic protocol flow description
