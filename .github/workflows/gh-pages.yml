@@ -1,10 +1,16 @@
 name: gh-pages
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
+permissions:
+  contents: write
 jobs:
   build:
 
+    concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +31,7 @@ jobs:
       run: touch build/wwwroot/.nojekyll
       
     - name: Deploy to Github Pages
-      uses: JamesIves/github-pages-deploy-action@4.1.7
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
           branch: gh-pages # The branch the action should deploy to.
           folder: build/wwwroot # The folder the action should deploy.
