@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
@@ -6,10 +6,6 @@
 		<Nullable>enable</Nullable>
 
 		<PackageId>Nostr.Client</PackageId>
-
-		<Version>1.0.0</Version>
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
-		<FileVersion>1.0.0.0</FileVersion>
 
 		<Authors>Mariusz Kotas</Authors>
 		<Description>Client for Nostr protocol</Description>
