@@ -8,6 +8,7 @@
 @using Newtonsoft.Json.Linq
 @using Nostr.Client.Responses.Contacts
 @using Nostr.Client.Responses.Metadata
+@using Websocket.Client
 @using QuickGridPagination = Microsoft.AspNetCore.Components.QuickGrid.PaginationState
 @using FluentPagination = Microsoft.Fast.Components.FluentUI.PaginationState;
 @inject RelayConnection NostrRelay
@@ -22,20 +23,11 @@
         <div class="filter-form">
             <Stack Orientation="Orientation.Vertical" HorizontalGap="10">
                 
-                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
-                    
-                    <FluentTextField style="width: 100%" Placeholder="" @bind-Value="_subscription">
-                        <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
-                        <strong>Subscription</strong>
-                    </FluentTextField>
-                    
-                    <FluentButton Appearance="Appearance.Neutral" @onclick="OnCloseSubscription" style="align-self: end">
-                        Close
-                        <FluentIcon Name="@FluentIcons.Dismiss" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
-                    </FluentButton>
+                <FluentTextField style="width: 100%" Placeholder="" @bind-Value="_subscription">
+                    <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
+                    <strong>Subscription</strong>
+                </FluentTextField>
 
-                </Stack>
-                
                 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="0">
                     <strong>Kinds</strong>
                     
@@ -102,10 +94,37 @@
                     <strong>Ids (P)</strong>
                 </FluentTextArea>
                 
-                <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
-                    Send
-                    <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
-                </FluentButton>
+                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+                    <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
+                        Send
+                        <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
+                    </FluentButton>
+                    
+                    @if (_isWaitingForData)
+                    {
+                        <FluentProgressRing></FluentProgressRing>
+                    }
+                </Stack>
+                
+                @if (_subscriptions.Any())
+                {
+                    <FluentDivider style="width: 100%"></FluentDivider>
+                    
+                    <div>
+                        <strong>Subscriptions</strong>
+                        <small>(tap to close)</small>
+                        <ul>
+                            @foreach (var sub in _subscriptions)
+                            {
+                                <a class="clear-link cursor-hand" @onclick="() => OnCloseSubscription(sub.Key)">
+                                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+                                    <span>@sub.Key</span> @(sub.Value ? "✅" : "❌")
+                                </Stack>
+                            </a>
+                            }
+                        </ul>
+                    </div>
+                }
 
             </Stack>
             
@@ -185,6 +204,7 @@
 </Stack>
 
 @code {
+    private bool _isWaitingForData = false;
     private FluentDialog? _eventDialog;
     private NostrEvent? _selectedEvent;
 
@@ -221,25 +241,36 @@
     private string? _idsText;
     private string? _eIdsText;
     private string? _pIdsText;
-    private int _hoursSince = -12;
-    private int _hoursUntil = 4;
+    private int? _hoursSince = -12;
+    private int? _hoursUntil = 4;
 
     private readonly HashSet<NostrEvent> _receivedEvents = new();
     private IQueryable<NostrEvent> _events = Array.Empty<NostrEvent>().AsQueryable();
     private readonly FluentPagination _pagination = new() { ItemsPerPage = 15 };
+    
+    private readonly Dictionary<string, bool> _subscriptions = new();
 
-    private IDisposable? _websocketHandler;
+    private IDisposable? _websocketDisconnection;
+    private IDisposable? _websocketHandlerEvents;
+    private IDisposable? _websocketHandlerEoes;
 
     public void Dispose()
     {
-        _websocketHandler?.Dispose();
+        _websocketHandlerEvents?.Dispose();
+        _websocketHandlerEoes?.Dispose();
     }
 
     protected override void OnInitialized()
     {
-        _websocketHandler = NostrRelay.Client.Streams.EventStream
+        _websocketDisconnection = NostrRelay.Communicator.DisconnectionHappened
+            .Subscribe(HandleDisconnection);
+        
+        _websocketHandlerEvents = NostrRelay.Client.Streams.EventStream
             .Buffer(TimeSpan.FromSeconds(1))
             .Subscribe(HandleEvent);
+        
+        _websocketHandlerEoes = NostrRelay.Client.Streams.EoseStream
+            .Subscribe(HandleEose);
 
         // push default authors into input element
         _authorsText = string.Join(Environment.NewLine, _filter.Authors ?? Array.Empty<string>());
@@ -254,38 +285,54 @@
             _eventDialog!.Hide();
     }
 
+    private void HandleDisconnection(DisconnectionInfo info)
+    {
+        foreach (var sub in _subscriptions.Keys)
+        {
+            _subscriptions[sub] = false;
+        }
+        StateHasChanged();
+    }
+    
     private void HandleEvent(IList<NostrEventResponse> response)
     {
         var events = response
-            .Where(x => x.Event != null)
-            .Select(x => x.Event!);
-            //.Select(x => new NostrEventView(x.CreatedAt, x.Kind, x.Id, x.Pubkey, x.Content));
+            .Where(x => x.Event != null);
         foreach (var evView in events)
         {
-            _receivedEvents.Add(evView);
+            _receivedEvents.Add(evView.Event!);
+            _subscriptions[evView.Subscription ?? string.Empty] = true;
         }
         _events = _receivedEvents.AsQueryable();
         StateHasChanged();
     }
 
+    private void HandleEose(NostrEoseResponse? response)
+    {
+        if (string.IsNullOrWhiteSpace(response?.Subscription))
+            return;
+
+        _isWaitingForData = false;
+        StateHasChanged();
+    }
+
     private void OnSend()
     {
-        Console.WriteLine($"Sending filter to {NostrRelay.Communicator.Url.Host}");
-
         _filter.Kinds = _selectedKinds?.ToArray();
         _filter.Authors = ConvertTextIds(_authorsText);
         _filter.Ids = ConvertTextIds(_idsText);
         _filter.E = ConvertTextIds(_eIdsText);
         _filter.P = ConvertTextIds(_pIdsText);
 
+        _subscriptions[_subscription] = true;
+        _isWaitingForData = true;
         NostrRelay.Client.Send(new NostrRequest(_subscription, _filter));
     }
 
-    private void OnCloseSubscription()
+    private void OnCloseSubscription(string sub)
     {
-        Console.WriteLine($"Sending subscription '{_subscription}' close to {NostrRelay.Communicator.Url.Host}");
-
-        NostrRelay.Client.Send(new NostrCloseRequest(_subscription));
+        NostrRelay.Client.Send(new NostrCloseRequest(sub));
+        _subscriptions[sub] = false;
     }
 
     private void OnBackgroundClick()
@@ -309,14 +356,26 @@
 
     private void SetSince(ChangeEventArgs args)
     {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            _hoursSince = null;
+            _filter.Since = null;
+            return;
+        }
         _hoursSince = Convert.ToInt32(args.Value);
-        _filter.Since = DateTime.Now.AddHours(_hoursSince);
+        _filter.Since = DateTime.Now.AddHours(_hoursSince.Value);
     }
 
     private void SetUntil(ChangeEventArgs args)
     {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            _hoursUntil = null;
+            _filter.Until = null;
+            return;
+        }
         _hoursUntil = Convert.ToInt32(args.Value);
-        _filter.Until = DateTime.Now.AddHours(_hoursUntil);
+        _filter.Until = DateTime.Now.AddHours(_hoursUntil.Value);
     }
 
     private string[]? ConvertTextIds(string? text)

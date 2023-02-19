@@ -37,7 +37,7 @@
             <main>
                 <article class="content px-4">
                    
-                    <ErrorBoundary>
+                    <ErrorBoundary @ref="_errorBoundary">
                         <ChildContent>
                             @Body
                         </ChildContent>
@@ -61,6 +61,13 @@
     private FluentDialog? _relayDialog;
     private bool _isRelayConnected;
 
+    private ErrorBoundary? _errorBoundary;
+
+    protected override void OnParametersSet()
+    {
+        _errorBoundary?.Recover();
+    }
+    
     protected override Task OnInitializedAsync()
     {
         _isRelayConnected = NostrRelay.IsConnected;

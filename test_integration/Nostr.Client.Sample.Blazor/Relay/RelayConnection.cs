@@ -10,14 +10,13 @@ namespace Nostr.Client.Sample.Blazor.Relay
 {
     public class RelayConnection : IDisposable
     {
-        public static HashSet<string> DefaultRelays = new(new[]{
+        public static readonly HashSet<string> DefaultRelays = new(new[]{
             "wss://relay.snort.social",
             "wss://relay.damus.io",
             "wss://nostr-pub.wellorder.net"
         });
 
         private readonly ILogger<RelayConnection> _logger;
-        private readonly ILogger<NostrWebsocketClient> _loggerClient;
 
         private readonly NostrWebsocketCommunicator _communicator;
         private readonly NostrWebsocketClient _client;
@@ -28,7 +27,6 @@ namespace Nostr.Client.Sample.Blazor.Relay
         public RelayConnection(ILogger<RelayConnection> logger, ILogger<NostrWebsocketClient> loggerClient)
         {
             _logger = logger;
-            _loggerClient = loggerClient;
 
             var url = new Uri(DefaultRelays.First());
             _communicator = new NostrWebsocketCommunicator(url);
@@ -40,7 +38,7 @@ namespace Nostr.Client.Sample.Blazor.Relay
             _communicator.ReconnectionHappened.Subscribe(OnReconnected);
             _communicator.DisconnectionHappened.Subscribe(OnDisconnected);
 
-            _client = new NostrWebsocketClient(_communicator, _loggerClient);
+            _client = new NostrWebsocketClient(_communicator, loggerClient);
         }
 
         public IWebsocketClient Communicator => _communicator;
