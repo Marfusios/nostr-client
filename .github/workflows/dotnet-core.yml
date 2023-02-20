@@ -16,10 +16,6 @@ jobs:
       with:
         dotnet-version: 7.x
 
-    # copy readme file to pack it into nuget
-    - name: Copy readme.md
-      run: cp -f README.md src/Nostr.Client/readme.md
-
     - name: Install dependencies
       run: dotnet restore
     - name: Build

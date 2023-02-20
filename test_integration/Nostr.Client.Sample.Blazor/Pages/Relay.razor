@@ -16,9 +16,9 @@
             <FluentIcon Name="@FluentIcons.Globe" Size="@IconSize.Size32" Variant="@IconVariant.Regular" Color="@Color.Error" style="align-self: end" />
         }
 
-        <FluentCombobox Items="@RelayConnection.DefaultRelays" @bind-Value="_selectedRelayUrl" Disabled="@NostrRelay.IsConnected"></FluentCombobox>
+        <FluentCombobox Items="@RelayConnection.DefaultRelays" @bind-Value="_selectedRelayUrl" Disabled="@NostrRelay.IsConnecting"></FluentCombobox>
     
-        @if (NostrRelay.IsConnected)
+        @if (NostrRelay.IsConnecting)
         {
             <FluentButton Appearance="Appearance.Neutral" style="align-self: end" @onclick="OnDisconnect">
                 Disconnect
@@ -63,6 +63,7 @@
     protected override void OnInitialized()
     {
         _selectedRelayUrl = NostrRelay.RelayUrl;
+
         NostrRelay.HistoryStream.Subscribe(OnHistory);
         NostrRelay.Communicator.MessageReceived.Subscribe(_ =>
         {

@@ -45,6 +45,8 @@ namespace Nostr.Client.Sample.Blazor.Relay
 
         public NostrWebsocketClient Client => _client;
 
+        public bool IsConnecting => _communicator.IsStarted;
+
         public bool IsConnected => _communicator.IsRunning;
 
         public string RelayUrl => _communicator.Url.ToString().TrimEnd('/');
@@ -77,11 +79,6 @@ namespace Nostr.Client.Sample.Blazor.Relay
 
         public async Task Disconnect()
         {
-            if (!_communicator.IsRunning)
-            {
-                return;
-            }
-
             await _communicator.Stop(WebSocketCloseStatus.NormalClosure, string.Empty);
         }
 

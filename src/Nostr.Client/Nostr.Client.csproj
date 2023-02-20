@@ -13,10 +13,11 @@
 		<PackageReleaseNotes>Enhancements</PackageReleaseNotes>
 		<Copyright>Copyright 2023 Mariusz Kotas. All rights reserved.</Copyright>
 		<PackageTags>Nostr relay websockets websocket client bitcoin</PackageTags>
-		<PackageLicenseUrl>https://github.com/Marfusios/nostr-client/blob/master/LICENSE</PackageLicenseUrl>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/Marfusios/nostr-client</PackageProjectUrl>
-		<PackageIconUrl>https://d2a49kd54np2tu.cloudfront.net/fit-in/1024x600/nostr_35ebe9479b.jpg</PackageIconUrl>
+		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/Marfusios/nostr-client</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>Git</RepositoryType>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -30,13 +31,12 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
 		<PackageReference Include="System.Reactive" Version="5.0.0" />
-		<PackageReference Include="Websocket.Client" Version="4.4.43" />
+		<PackageReference Include="Websocket.Client" Version="4.5.2" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="readme.md">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
+		<None Include="icon.png" Pack="true" PackagePath="" />
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 </Project>
