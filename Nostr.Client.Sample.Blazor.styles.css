@@ -103,6 +103,17 @@ fluent-card[b-n7e16r3r7k] {
     display: flex;
     flex-direction: column;
 }
+/* /Pages/Keys.razor.rz.scp.css */
+.conversion-group[b-s2jod6oxhn] {
+    padding-left: 20px;
+    max-width: 550px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.keys[b-s2jod6oxhn] {
+    list-style-type: none;
+}
 /* /Pages/QueryTool.razor.rz.scp.css */
 .filter-form[b-irjrdv63qb] {
     width: 100%;
