@@ -37,6 +37,11 @@ body {
     align-items: center;
     white-space: nowrap;
     padding-left: 1.5rem;
+    
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 10;
 }
 
     .siteheader .logo p {
@@ -99,6 +104,11 @@ body {
     background-color: var(--fill-color);
     color: var(--neutral-foreground-rest);
     padding-left: calc(var(--design-unit) * 3px);
+    
+    position: fixed;
+    top: 70px;
+    left: 0;
+    z-index: 9;
 }
 
     .navigation > ul {
@@ -132,6 +142,7 @@ body {
     color: var(--neutral-foreground-rest);
     padding-inline-start: calc(var(--design-unit) * 6px);
     padding-inline-end: calc(var(--design-unit) * 6px);
+    margin-left: 60px;
 }
 
 .dialog-content {
