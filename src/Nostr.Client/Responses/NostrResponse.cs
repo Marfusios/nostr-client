@@ -10,7 +10,7 @@ namespace Nostr.Client.Responses
         public string? MessageType { get; init; }
 
         /// <summary>
-        /// Additional data that are not yet handled by this library into static structure
+        /// Additional data that are not yet handled by this library (parsed into properties)
         /// </summary>
         public object[] AdditionalData { get; set; } = Array.Empty<object>();
     }

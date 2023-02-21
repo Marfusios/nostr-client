@@ -84,16 +84,20 @@ More usage examples:
 
 ### Reconnecting
 
-There is a built-in reconnection which invokes after 1 minute (default) of not receiving any messages from the server. It is possible to configure that timeout via `communicator.ReconnectTimeoutMs`. Also, there is a stream `ReconnectionHappened` which sends information about a type of reconnection. However, if you are subscribed to low rate channels, it is very likely that you will encounter that timeout - higher the timeout to a few minutes or call `PingRequest` by your own every few seconds. 
+A built-in reconnection invokes after 1 minute (default) of not receiving any messages from the server. 
+It is possible to configure that timeout via `communicator.ReconnectTimeout`. 
+Also, a stream `ReconnectionHappened` sends information about a type of reconnection. 
+However, if you are subscribed to low-rate channels, you will likely encounter that timeout - higher it to a few minutes or implement `ping-pong` interaction on your own every few seconds. 
 
-In the case of Nostr relay outage, there is a built-in functionality which slows down reconnection requests (could be configured via `communicator.ErrorReconnectTimeoutMs`, the default is 1 minute).
+In the case of Nostr relay outage, there is a built-in functionality that slows down reconnection requests 
+(could be configured via `client.ErrorReconnectTimeout`, the default is 1 minute).
 
-Beware that you **need to resubscribe to channels** after reconnection happens. 
+Beware that you **need to resubscribe to channels** after reconnection happens. You should subscribe to `ReconnectionHappened` stream and send subscription requests. 
 
 ### Testing
 
 The library is prepared for replay testing. The dependency between `Client` and `Communicator` is via abstraction `INostrCommunicator`. There are two communicator implementations: 
-* `NostrWebsocketCommunicator` - a realtime communication with Nostr relay.
+* `NostrWebsocketCommunicator` - real-time communication with Nostr relay.
 * `NostrFileCommunicator` - a simulated communication, raw data are loaded from files and streamed.
 
 Feel free to implement `INostrCommunicator` on your own, for example, load raw data from database, cache, etc. 
@@ -117,134 +121,6 @@ client.Streams.EventStream.Subscribe(trade =>
 await communicator.Start();
 ```
 
-### Multi-threading
+### Multi-threading and other considerations
 
-Observables from Reactive Extensions are single threaded by default. It means that your code inside subscriptions is called synchronously and as soon as the message comes from websocket API. 
-It brings a great advantage of not to worry about synchronization, but if your code takes a longer time to execute it will block the receiving method, 
-buffer the messages and may end up losing messages. For that reason consider to handle messages on the other thread and unblock receiving thread as soon as possible. 
-I've prepared a few examples for you: 
-
-#### Default behavior
-
-Every subscription code is called on a main websocket thread. Every subscription is synchronized together. No parallel execution. It will block the receiving thread. 
-
-```csharp
-client
-    .Streams
-    .EventStream
-    .Subscribe(event => { code1 });
-
-client
-    .Streams
-    .NoticeStream
-    .Subscribe(notice => { code2 });
-
-// 'code1' and 'code2' are called in a correct order, according to websocket flow
-// ----- code1 ----- code1 ----- ----- code1
-// ----- ----- code2 ----- code2 code2 -----
-```
-
-#### Parallel subscriptions 
-
-Every single subscription code is called on a separate thread. Every single subscription is synchronized, but different subscriptions are called in parallel. 
-
-```csharp
-client
-    .Streams
-    .EventStream
-    .ObserveOn(TaskPoolScheduler.Default)
-    .Subscribe(event => { code1 });
-
-client
-    .Streams
-    .NoticeStream
-    .ObserveOn(TaskPoolScheduler.Default)
-    .Subscribe(notice => { code2 });
-
-// 'code1' and 'code2' are called in parallel, do not follow websocket flow
-// ----- code1 ----- code1 ----- code1 -----
-// ----- code2 code2 ----- code2 code2 code2
-```
-
- #### Parallel subscriptions with synchronization
-
-In case you want to run your subscription code on the separate thread but still want to follow websocket flow through every subscription, use synchronization with gates: 
-
-```csharp
-private static readonly object GATE1 = new object();
-client
-    .Streams
-    .EventStream
-    .ObserveOn(TaskPoolScheduler.Default)
-    .Synchronize(GATE1)
-    .Subscribe(event => { code1 });
-
-client
-    .Streams
-    .NoticeStream
-    .ObserveOn(TaskPoolScheduler.Default)
-    .Synchronize(GATE1)
-    .Subscribe(notice => { code2 });
-
-// 'code1' and 'code2' are called concurrently and follow websocket flow
-// ----- code1 ----- code1 ----- ----- code1
-// ----- ----- code2 ----- code2 code2 ----
-```
-
-### Async/Await integration
-
-Using `async/await` in your subscribe methods is a bit tricky. Subscribe from Rx.NET doesn't `await` tasks, 
-so it won't block stream execution and cause sometimes undesired concurrency. For example: 
-
-```csharp
-client
-    .Streams
-    .EventStream
-    .Subscribe(async event => {
-        // do smth 1
-        await Task.Delay(5000); // waits 5 sec, could be HTTP call or something else
-        // do smth 2
-    });
-```
-
-That `await Task.Delay` won't block stream and subscribe method will be called multiple times concurrently. 
-If you want to buffer messages and process them one-by-one, then use this: 
-
-```csharp
-client
-    .Streams
-    .EventStream
-    .Select(event => Observable.FromAsync(async () => {
-        // do smth 1
-        await Task.Delay(5000); // waits 5 sec, could be HTTP call or something else
-        // do smth 2
-    }))
-    .Concat() // executes sequentially
-    .Subscribe();
-```
-
-If you want to process them concurrently (avoid synchronization), then use this
-
-```csharp
-client
-    .Streams
-    .EventStream
-    .Select(event => Observable.FromAsync(async () => {
-        // do smth 1
-        await Task.Delay(5000); // waits 5 sec, could be HTTP call or something else
-        // do smth 2
-    }))
-    .Merge() // executes concurrently
-    // .Merge(4) you can limit concurrency with a parameter
-    // .Merge(1) is same as .Concat()
-    // .Merge(0) is invalid (throws exception)
-    .Subscribe();
-```
-
-More info in [Github issue](https://github.com/dotnet/reactive/issues/459).
-
-Don't worry about websocket connection, those sequential execution via `.Concat()` or `.Merge(1)` has no effect on receiving messages. 
-It won't affect receiving thread, only buffers messages inside `EventStream`. 
-
-But beware of [producer-consumer problem](https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem) when the consumer will be too slow. Here is a [StackOverflow issue](https://stackoverflow.com/questions/11010602/with-rx-how-do-i-ignore-all-except-the-latest-value-when-my-subscribe-method-is) 
-with an example how to ignore/discard buffered messages and always process only the last one. 
+See [Websocket Client readme](https://github.com/Marfusios/websocket-client#multi-threading)

@@ -1,0 +1,114 @@
+﻿@page "/keys"
+@using Nostr.Client.Keys
+@using Nostr.Client.Utils
+
+<Stack Orientation="Orientation.Vertical">
+
+    <PageHeader Title="Keys" Subtitle="Tools for Nostr public & private keys"></PageHeader>
+    
+    <h3><FluentIcon Name="@FluentIcons.New" Size="@IconSize.Size20" Variant="@IconVariant.Regular" Color="@Color.Neutral" /> New Keys</h3>
+
+    <div class="conversion-group">
+        
+        <FluentButton Appearance="Appearance.Neutral" @onclick="OnGenerate" class="m-b-1">
+            Generate
+            <FluentIcon Name="@FluentIcons.Key" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" Variant="IconVariant.Regular"/>
+        </FluentButton>
+        
+        @if (_generatedKeyPair != null)
+        {
+            <div>
+                <strong>Private key: </strong>
+                <ul class="keys">
+                    <li>@_generatedKeyPair?.PrivateKey?.Bech32</li>
+                    <li>@_generatedKeyPair?.PrivateKey?.Hex</li>
+                </ul>
+            </div>
+
+            <div>
+                <strong>Public key: </strong>
+                <ul class="keys">
+                    <li>@_generatedKeyPair?.PublicKey?.Bech32</li>
+                    <li>@_generatedKeyPair?.PublicKey?.Hex</li>
+                </ul>
+            </div>
+        }
+
+    </div>
+    
+    <h3><FluentIcon Name="@FluentIcons.ArrowCircleRight" Size="@IconSize.Size20" Variant="@IconVariant.Regular" Color="@Color.Neutral" /> Derivation</h3>
+
+    <div class="conversion-group">
+        <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" Value="@_privateKey" @oninput="PrivateKeySet" class="m-b-1">
+            <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
+            <strong>Private key</strong>
+        </FluentTextField>
+        
+        @if (_derivedKeyPair != null)
+        {
+            <div>
+                <ul class="keys">
+                    <li>@_derivedKeyPair?.PrivateKey?.Bech32</li>
+                    <li>@_derivedKeyPair?.PrivateKey?.Hex</li>
+                </ul>
+            </div>
+
+            <div>
+                <strong>Public key: </strong>
+                <ul class="keys">
+                    <li>@_derivedKeyPair?.PublicKey?.Bech32</li>
+                    <li>@_derivedKeyPair?.PublicKey?.Hex</li>
+                </ul>
+            </div>
+        }
+
+    </div>
+    
+</Stack>
+
+@code
+{
+    NostrKeyPair? _generatedKeyPair;
+
+    string? _privateKey;
+    NostrKeyPair? _derivedKeyPair;
+
+    private void OnGenerate()
+    {
+        _generatedKeyPair = NostrKeyPair.GenerateNew();
+    }
+
+    private void PrivateKeySet(ChangeEventArgs args)
+    {
+        try
+        {
+            _privateKey = (string?)args.Value;
+            var hex = TryGetHex() ?? _privateKey;
+            if (string.IsNullOrWhiteSpace(hex))
+            {
+                _derivedKeyPair = null;
+                return;
+            }
+
+            _derivedKeyPair = new NostrKeyPair(NostrPrivateKey.FromHex(hex));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to parse private key, error: {e.Message}");
+            _derivedKeyPair = null;
+        }
+    }
+
+    private string? TryGetHex()
+    {
+        try
+        {
+            return NostrConverter.ToHex(_privateKey,  out _);
+        }
+        catch (Exception )
+        {
+            // ignore
+            return null;
+        }
+    }
+}

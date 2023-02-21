@@ -13,13 +13,13 @@ namespace Nostr.Client.Utils
 
             for (var i = 0; i < hex.Length >> 1; ++i)
             {
-                arr[i] = (byte)((GetHexVal(hex[i << 1]) << 4) + (GetHexVal(hex[(i << 1) + 1])));
+                arr[i] = (byte)((GetHexValue(hex[i << 1]) << 4) + (GetHexValue(hex[(i << 1) + 1])));
             }
 
             return arr;
         }
 
-        public static int GetHexVal(char hex)
+        public static int GetHexValue(char hex)
         {
             var val = (int)hex;
             return val - (val < 58 ? 48 : (val < 97 ? 55 : 87));

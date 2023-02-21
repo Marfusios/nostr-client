@@ -136,7 +136,9 @@
                             @*<FluentIcon Name="@FluentIcons.Glasses" Size="@IconSize.Size16" Color="Color.Neutral" Variant="IconVariant.Regular" />*@
                         </FluentButton>
                     </Microsoft.Fast.Components.FluentUI.TemplateColumn>
-                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Created" Property="@(p => p.CreatedAt)" Format="HH:mm:ss" Sortable="true"/>
+                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Created" Sortable="true" SortBy="@_sortByDate">
+                        <span>@context.CreatedAt?.ToLocalTime().ToString("T")</span>
+                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
                     <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true"/>
                     <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Id" Sortable="true">
                         <span>@context.Id[..4]..@context.Id[^4..]</span>
@@ -165,6 +167,10 @@
                             <p style="font-size: 18px">@FormatEventContent(_selectedEvent?.Content)</p>
                         }
                         
+                        <p>
+                            <strong>Created at</strong>
+                            <div>@_selectedEvent?.CreatedAt?.ToLocalTime().ToString("F")</div>
+                        </p>
                         <p>
                             <strong>Id</strong>
                             @if (_selectedEvent?.Kind == NostrKind.ShortTextNote)
@@ -249,6 +255,9 @@
     private readonly FluentPagination _pagination = new() { ItemsPerPage = 15 };
     
     private readonly Dictionary<string, bool> _subscriptions = new();
+
+    private GridSort<NostrEvent> _sortByDate = GridSort<NostrEvent>
+        .ByAscending(p => p.CreatedAt);
 
     private IDisposable? _websocketDisconnection;
     private IDisposable? _websocketHandlerEvents;

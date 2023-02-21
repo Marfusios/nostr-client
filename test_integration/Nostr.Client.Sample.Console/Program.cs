@@ -28,10 +28,10 @@ Log.Debug("====================================");
 Log.Debug("              STARTING              ");
 Log.Debug("====================================");
 
-// var url = new Uri("wss://relay.snort.social");
+var url = new Uri("wss://relay.snort.social");
 // var url = new Uri("wss://relay.damus.io");
 // var url = new Uri("wss://eden.nostr.land");
-var url = new Uri("wss://nostr-pub.wellorder.net");
+// var url = new Uri("wss://nostr-pub.wellorder.net");
 
 using var communicator = new NostrWebsocketCommunicator(url, () =>
 {

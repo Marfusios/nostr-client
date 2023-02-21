@@ -3,7 +3,7 @@
 
 <Stack Orientation="Orientation.Vertical">
 
-    <PageHeader Title="Converter" Subtitle="Conversion between Nostr keys"></PageHeader>
+    <PageHeader Title="Converter" Subtitle="Conversion between Nostr key formats"></PageHeader>
     
     <h3>Bech32 <FluentIcon Name="@FluentIcons.ArrowsBidirectional" Size="@IconSize.Size20" Variant="@IconVariant.Regular" Color="@Color.Accent" /> Hex</h3>
     
@@ -15,7 +15,7 @@
                HorizontalGap="20">
            
             <FluentTextField Style="width: 100%" Placeholder="npub1xxx" Value="@_bech32Key" @oninput="Bech32Set">
-                <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral />
+                <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
                 <strong>Bech32 key</strong>
             </FluentTextField>
         
@@ -25,7 +25,7 @@
             </Stack>
 
             <FluentTextField style="width: 100%" Placeholder="" Value="@_hexKey" @oninput="HexSet">
-                <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
+                <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" Variant="IconVariant.Filled" />
                 <strong>Hex key</strong>
             </FluentTextField>
         
@@ -36,8 +36,7 @@
 
 @code
 {
-    readonly string[] _prefixes = new[]
-    {
+    readonly string[] _prefixes = {
         "npub",
         "nsec",
         "note",
