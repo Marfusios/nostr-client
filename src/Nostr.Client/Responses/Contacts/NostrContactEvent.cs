@@ -1,4 +1,5 @@
-﻿using Nostr.Client.Json;
+﻿using Newtonsoft.Json;
+using Nostr.Client.Json;
 
 namespace Nostr.Client.Responses.Contacts
 {
@@ -11,6 +12,7 @@ namespace Nostr.Client.Responses.Contacts
                      new NostrRelays(new Dictionary<string, NostrRelayConfig>());
         }
 
+        [JsonIgnore]
         public NostrRelays Relays { get; init; }
     }
 }

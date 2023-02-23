@@ -21,6 +21,19 @@ namespace Nostr.Client.Keys
 
         public ECXOnlyPubKey Ec { get; }
 
+        /// <summary>
+        /// Validate signature of the given hex by the public key
+        /// </summary>
+        public bool IsHexSignatureValid(string? signatureHex, string? hex)
+        {
+            if (string.IsNullOrWhiteSpace(signatureHex))
+                return false;
+            if (!SecpSchnorrSignature.TryCreate(HexExtensions.ToByteArray(signatureHex), out var schnorr))
+                return false;
+            var result = Ec.SigVerifyBIP340(schnorr, HexExtensions.ToByteArray(hex ?? string.Empty));
+            return result;
+        }
+
         public bool Equals(NostrPublicKey? other)
         {
             if (ReferenceEquals(null, other)) return false;

@@ -1,4 +1,5 @@
-﻿using NBitcoin.Secp256k1;
+﻿using NBitcoin;
+using NBitcoin.Secp256k1;
 using Nostr.Client.Utils;
 using System.Security.Cryptography;
 
@@ -21,6 +22,21 @@ namespace Nostr.Client.Keys
         public string Bech32 { get; }
 
         public ECPrivKey Ec { get; }
+
+        /// <summary>
+        /// Sign hex with the private key. 
+        /// Returns signature in hex format.
+        /// </summary>
+        public string? SignHex(string? hex)
+        {
+            if (hex == null)
+                return null;
+
+            var hexBytes = HexExtensions.ToByteArray(hex);
+            return !Ec.TrySignBIP340(hexBytes, null, out var signature) ?
+                null :
+                signature.ToBytes().ToHex();
+        }
 
         public bool Equals(NostrPrivateKey? other)
         {

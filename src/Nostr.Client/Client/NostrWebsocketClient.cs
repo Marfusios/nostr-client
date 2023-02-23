@@ -15,12 +15,16 @@ namespace Nostr.Client.Client
         private readonly ILogger<NostrWebsocketClient> _logger;
         private readonly INostrCommunicator _communicator;
         private readonly IDisposable? _messageReceivedSubscription;
+        private readonly JsonSerializerSettings _jsonSettings;
 
         public NostrWebsocketClient(INostrCommunicator communicator, ILogger<NostrWebsocketClient>? logger)
         {
             _logger = logger ?? new NullLogger<NostrWebsocketClient>();
             _communicator = communicator;
             _messageReceivedSubscription = _communicator.MessageReceived.Subscribe(HandleMessage);
+
+            // cache settings, avoid getting new instance all the time
+            _jsonSettings = NostrSerializer.Settings;
         }
 
         public void Dispose()
@@ -47,7 +51,7 @@ namespace Nostr.Client.Client
                     throw new ArgumentNullException(nameof(request));
                 }
 
-                var serialized = JsonConvert.SerializeObject(request, NostrSerializer.Settings);
+                var serialized = JsonConvert.SerializeObject(request, _jsonSettings);
                 _communicator.Send(serialized);
             }
             catch (Exception e)

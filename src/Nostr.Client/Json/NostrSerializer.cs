@@ -9,13 +9,29 @@ namespace Nostr.Client.Json
         /// <summary>
         /// Unified JSON settings
         /// </summary>
-        public static readonly JsonSerializerSettings Settings = new()
+        public static JsonSerializerSettings Settings => new()
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
             Formatting = Formatting.None,
             NullValueHandling = NullValueHandling.Ignore,
             Converters = new List<JsonConverter>
             {
+                new UnixDateTimeConverter()
+            },
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        };
+
+        /// <summary>
+        /// Unified JSON settings that serializes messages into array
+        /// </summary>
+        public static JsonSerializerSettings ArraySettings = new()
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+            Formatting = Formatting.None,
+            NullValueHandling = NullValueHandling.Ignore,
+            Converters = new List<JsonConverter>
+            {
+                new ArrayConverter(),
                 new UnixDateTimeConverter()
             },
             ContractResolver = new CamelCasePropertyNamesContractResolver()

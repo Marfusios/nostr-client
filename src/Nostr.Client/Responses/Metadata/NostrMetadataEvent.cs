@@ -1,4 +1,5 @@
-﻿using Nostr.Client.Json;
+﻿using Newtonsoft.Json;
+using Nostr.Client.Json;
 
 namespace Nostr.Client.Responses.Metadata
 {
@@ -10,6 +11,7 @@ namespace Nostr.Client.Responses.Metadata
             Metadata = NostrSerializer.DeserializeSafely<NostrMetadata>(content);
         }
 
+        [JsonIgnore]
         public NostrMetadata? Metadata { get; init; }
     }
 }

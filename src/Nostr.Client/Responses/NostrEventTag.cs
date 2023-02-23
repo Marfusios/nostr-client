@@ -8,6 +8,16 @@ namespace Nostr.Client.Responses
     [JsonConverter(typeof(ArrayConverter))]
     public class NostrEventTag : IHaveAdditionalData
     {
+        public NostrEventTag()
+        {
+        }
+
+        public NostrEventTag(string? identifier, params object[] data)
+        {
+            TagIdentifier = identifier;
+            AdditionalData = data;
+        }
+
         [ArrayProperty(0)]
         public string? TagIdentifier { get; init; }
 
@@ -15,5 +25,14 @@ namespace Nostr.Client.Responses
         /// Additional unexpected data at higher indexes in the tags array
         /// </summary>
         public object[] AdditionalData { get; set; } = Array.Empty<object>();
+
+        public NostrEventTag DeepClone()
+        {
+            return new NostrEventTag()
+            {
+                TagIdentifier = TagIdentifier,
+                AdditionalData = (object[])AdditionalData.Clone()
+            };
+        }
     }
 }

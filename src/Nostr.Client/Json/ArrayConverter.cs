@@ -13,8 +13,8 @@ namespace Nostr.Client.Json
     /// </summary>
     public class ArrayConverter : JsonConverter
     {
-        private static readonly ConcurrentDictionary<(MemberInfo, Type), Attribute> AttributeByMemberInfoAndTypeCache = new();
-        private static readonly ConcurrentDictionary<(Type, Type), Attribute> AttributeByTypeAndTypeCache = new();
+        private static readonly ConcurrentDictionary<(MemberInfo, Type), Attribute?> AttributeByMemberInfoAndTypeCache = new();
+        private static readonly ConcurrentDictionary<(Type, Type), Attribute?> AttributeByTypeAndTypeCache = new();
 
         /// <inheritdoc />
         public override bool CanConvert(Type objectType)
@@ -36,7 +36,7 @@ namespace Nostr.Client.Json
             return ParseObject(arr, result, objectType);
         }
 
-        private static object ParseObject(JArray arr, object result, Type objectType)
+        private static object? ParseObject(JArray arr, object? result, Type objectType)
         {
             var maxIndex = 0;
             foreach (var property in objectType.GetProperties())
@@ -58,12 +58,15 @@ namespace Nostr.Client.Json
                     var count = 0;
                     if (innerArray.Count == 0)
                     {
-                        var arrayResult = (IList)Activator.CreateInstance(property.PropertyType, new[] { 0 });
+                        var arrayResult = (IList?)Activator.CreateInstance(property.PropertyType, new[] { 0 });
                         property.SetValue(result, arrayResult);
                     }
                     else if (innerArray[0].Type == JTokenType.Array)
                     {
-                        var arrayResult = (IList)Activator.CreateInstance(property.PropertyType, new[] { innerArray.Count });
+                        var arrayResult = (IList?)Activator.CreateInstance(property.PropertyType, new[] { innerArray.Count });
+                        if (arrayResult == null)
+                            throw new InvalidOperationException("Property cannot be cast to 'IList'");
+
                         foreach (var obj in innerArray)
                         {
                             var innerObj = Activator.CreateInstance(objType!);
@@ -74,7 +77,10 @@ namespace Nostr.Client.Json
                     }
                     else
                     {
-                        var arrayResult = (IList)Activator.CreateInstance(property.PropertyType, new[] { 1 });
+                        var arrayResult = (IList?)Activator.CreateInstance(property.PropertyType, new[] { 1 });
+                        if (arrayResult == null)
+                            throw new InvalidOperationException("Property cannot be cast to 'IList'");
+
                         var innerObj = Activator.CreateInstance(objType!);
                         arrayResult[0] = ParseObject(innerArray, innerObj, objType!);
                         property.SetValue(result, arrayResult);
@@ -90,7 +96,10 @@ namespace Nostr.Client.Json
 
                 if (converterAttribute != null)
                 {
-                    value = item.ToObject(property.PropertyType, new JsonSerializer { Converters = { (JsonConverter)Activator.CreateInstance(converterAttribute.ConverterType) } });
+                    value = item.ToObject(property.PropertyType, new JsonSerializer
+                    {
+                        Converters = { (JsonConverter?)Activator.CreateInstance(converterAttribute.ConverterType) ?? throw new InvalidOperationException("Cannot create JsonConverter") }
+                    });
                 }
                 else if (conversionAttribute != null)
                 {
@@ -164,12 +173,26 @@ namespace Nostr.Client.Json
                 last = arrayProp.Index;
                 var converterAttribute = GetCustomAttribute<JsonConverterAttribute>(prop);
                 if (converterAttribute != null)
-                    writer.WriteRawValue(JsonConvert.SerializeObject(prop.GetValue(value), (JsonConverter)Activator.CreateInstance(converterAttribute.ConverterType)));
+                    writer.WriteRawValue(
+                        JsonConvert.SerializeObject(prop.GetValue(value),
+                        (JsonConverter?)Activator.CreateInstance(converterAttribute.ConverterType) ?? throw new InvalidOperationException("Cannot create JsonConverter")));
                 else if (!IsSimple(prop.PropertyType))
-                    serializer.Serialize(writer, prop.GetValue(value));
+                    NostrSerializer.Serializer.Serialize(writer, prop.GetValue(value));
                 else
                     writer.WriteValue(prop.GetValue(value));
             }
+
+            if (value is IHaveAdditionalData valueWithData)
+            {
+                foreach (var additional in valueWithData.AdditionalData)
+                {
+                    if (!IsSimple(additional.GetType()))
+                        NostrSerializer.Serializer.Serialize(writer, additional);
+                    else
+                        writer.WriteValue(additional);
+                }
+            }
+
             writer.WriteEndArray();
         }
 
@@ -187,10 +210,10 @@ namespace Nostr.Client.Json
         }
 
         private static T? GetCustomAttribute<T>(MemberInfo memberInfo) where T : Attribute =>
-            (T?)AttributeByMemberInfoAndTypeCache.GetOrAdd((memberInfo, typeof(T)), tuple => memberInfo.GetCustomAttribute(typeof(T)));
+            (T?)AttributeByMemberInfoAndTypeCache.GetOrAdd((memberInfo, typeof(T)), _ => memberInfo.GetCustomAttribute(typeof(T)));
 
         private static T? GetCustomAttribute<T>(Type type) where T : Attribute =>
-            (T?)AttributeByTypeAndTypeCache.GetOrAdd((type, typeof(T)), tuple => type.GetCustomAttribute(typeof(T)));
+            (T?)AttributeByTypeAndTypeCache.GetOrAdd((type, typeof(T)), _ => type.GetCustomAttribute(typeof(T)));
     }
 
     /// <summary>
