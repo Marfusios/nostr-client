@@ -37,11 +37,10 @@ body {
     align-items: center;
     white-space: nowrap;
     padding-left: 1.5rem;
-    
     position: fixed;
     top: 0;
     width: 100%;
-    z-index: 10;
+    z-index: 1;
 }
 
     .siteheader .logo p {
@@ -104,11 +103,10 @@ body {
     background-color: var(--fill-color);
     color: var(--neutral-foreground-rest);
     padding-left: calc(var(--design-unit) * 3px);
-    
     position: fixed;
     top: 70px;
     left: 0;
-    z-index: 9;
+    z-index: 1;
 }
 
     .navigation > ul {

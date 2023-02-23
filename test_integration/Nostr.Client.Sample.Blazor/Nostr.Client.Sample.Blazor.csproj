@@ -18,15 +18,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="Components\PageHeader.razor.css" />
+		<None Remove="Components\PageHeader.razor.css" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Include="Components\PageHeader.razor.css" />
+		<Content Include="Components\PageHeader.razor.css" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="0.1.0-alpha.22351.1" />
 		<PackageReference Include="Microsoft.Fast.Components.FluentUI" Version="2.*" />
 	</ItemGroup>
 

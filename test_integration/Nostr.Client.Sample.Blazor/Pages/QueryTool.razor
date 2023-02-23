@@ -9,8 +9,6 @@
 @using Nostr.Client.Responses.Contacts
 @using Nostr.Client.Responses.Metadata
 @using Websocket.Client
-@using QuickGridPagination = Microsoft.AspNetCore.Components.QuickGrid.PaginationState
-@using FluentPagination = Microsoft.Fast.Components.FluentUI.PaginationState;
 @inject RelayConnection NostrRelay
 @implements IDisposable
 
@@ -74,7 +72,7 @@
 
                 </Stack>
 
-                <FluentNumberField Min="0" @bind-Value="_filter.Limit">
+                <FluentNumberField Min="0" Value="@_filter.Limit" @oninput="SetLimit">
                     <strong>Limit</strong>
                 </FluentNumberField>
 
@@ -130,30 +128,35 @@
             
             <div>
                 <FluentDataGrid RowsData="@_events" Pagination="@_pagination" GridTemplateColumns="0.08fr 0.25fr 0.2fr 0.2fr 0.2fr 1fr" RowsDataKey="@(p => p.Id ?? string.Empty)">
-                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Class="no-padding">
+                    <TemplateColumn Class="no-padding">
                         <FluentButton Appearance="Appearance.Neutral" @onclick="@(() => OnDisplayEvent(context))" style="height: auto">
                             ...
-                            @*<FluentIcon Name="@FluentIcons.Glasses" Size="@IconSize.Size16" Color="Color.Neutral" Variant="IconVariant.Regular" />*@
                         </FluentButton>
-                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
-                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Created" Sortable="true" SortBy="@_sortByDate">
+                    </TemplateColumn>
+                    <TemplateColumn Title="Created" Sortable="true" SortBy="@_sortByDate">
                         <span>@context.CreatedAt?.ToLocalTime().ToString("T")</span>
-                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
-                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true"/>
-                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Id" Sortable="true">
+                    </TemplateColumn>
+                    <PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true"/>
+                    <TemplateColumn Title="Id" Sortable="true">
                         <span>@context.Id[..4]..@context.Id[^4..]</span>
-                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
-                    <Microsoft.Fast.Components.FluentUI.TemplateColumn Title="Author" Sortable="true">
+                    </TemplateColumn>
+                    <TemplateColumn Title="Author" Sortable="true">
                         <span>@context.Pubkey[..4]..@context.Pubkey[^4..]</span>
-                    </Microsoft.Fast.Components.FluentUI.TemplateColumn>
-                    <Microsoft.Fast.Components.FluentUI.PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true"/>
+                    </TemplateColumn>
+                    <PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true"/>
                 </FluentDataGrid>
                 <FluentPaginator Value="@_pagination" />
-                
-                <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearEvents">
-                    Clear
-                    <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
-                </FluentButton>
+
+                <Stack Orientation="Orientation.Horizontal" HorizontalGap="10" HorizontalAlignment="StackHorizontalAlignment.Right" VerticalAlignment="StackVerticalAlignment.Center">
+                    <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearEvents">
+                        Clear
+                        <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
+                    </FluentButton>
+
+                    <span>Page size</span>
+                    <FluentNumberField Min="0" Value="@_pagination.ItemsPerPage" @onchange="SetPagination" style="width: 80px">
+                    </FluentNumberField>
+                </Stack>
 
                 <FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
                     <div class="dialog-content">
@@ -190,18 +193,6 @@
                     </div>
                 </FluentDialog>
             </div>
-            
-            @*<div>
-                <QuickGrid Items="@_events" Pagination="@_pagination">
-                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Created" Property="@(p => p.CreatedAt)" Format="MM-dd HH:mm:ss" Sortable="true" />
-                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true" />
-                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Id" Property="@(p => p.Id)" Sortable="true" />
-                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Author" Property="@(p => p.Pubkey)" Sortable="true" />
-                    <Microsoft.AspNetCore.Components.QuickGrid.PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true" />
-                </QuickGrid>
-                
-                <Paginator Value="@_pagination" />
-            </div>*@
 
         </div>
 
@@ -252,7 +243,14 @@
 
     private readonly HashSet<NostrEvent> _receivedEvents = new();
     private IQueryable<NostrEvent> _events = Array.Empty<NostrEvent>().AsQueryable();
-    private readonly FluentPagination _pagination = new() { ItemsPerPage = 15 };
+    private readonly PaginationState _pagination = new() { ItemsPerPage = 15 };
+
+    private readonly int[] _paginationOptions = {
+        15,
+        25,
+        50,
+        100
+    };
     
     private readonly Dictionary<string, bool> _subscriptions = new();
 
@@ -385,6 +383,25 @@
         }
         _hoursUntil = Convert.ToInt32(args.Value);
         _filter.Until = DateTime.Now.AddHours(_hoursUntil.Value);
+    }
+
+    private void SetLimit(ChangeEventArgs args)
+    {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            _filter.Limit = null;
+            return;
+        }
+        _filter.Limit = Convert.ToInt32(args.Value);
+    }
+
+    private void SetPagination(ChangeEventArgs args)
+    {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            return;
+        }
+        _pagination.ItemsPerPage = Convert.ToInt32(args.Value);
     }
 
     private string[]? ConvertTextIds(string? text)
