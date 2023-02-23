@@ -113,6 +113,20 @@ fluent-card[b-n7e16r3r7k] {
 .keys[b-s2jod6oxhn] {
     list-style-type: none;
 }
+
+.sig-valid[b-s2jod6oxhn] {
+    padding: 10px;
+    border: dotted 2px var(--success);
+    border-radius: 10px;
+    color: var(--success);
+}
+
+.sig-invalid[b-s2jod6oxhn] {
+    padding: 10px;
+    border: dotted 2px var(--error);
+    border-radius: 10px;
+    color: var(--error);
+}
 /* /Pages/QueryTool.razor.rz.scp.css */
 .filter-form[b-irjrdv63qb] {
     width: 100%;
