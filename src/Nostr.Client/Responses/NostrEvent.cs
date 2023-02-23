@@ -30,7 +30,7 @@ namespace Nostr.Client.Responses
         public NostrKind Kind { get; init; }
 
         [ArrayProperty(4)]
-        public NostrEventTag[]? Tags { get; init; }
+        public NostrEventTag[]? Tags { get; init; } = Array.Empty<NostrEventTag>();
 
         /// <summary>
         /// Arbitrary string
