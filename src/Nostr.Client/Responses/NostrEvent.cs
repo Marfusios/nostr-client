@@ -157,8 +157,8 @@ namespace Nostr.Client.Responses
         /// </summary>
         public NostrEvent Sign(NostrPrivateKey privateKey)
         {
-            var keyPair = new NostrKeyPair(privateKey);
-            var clone = DeepCloneWithPubKey(keyPair.PublicKey.Hex);
+            var publicKey = privateKey.DerivePublicKey();
+            var clone = DeepCloneWithPubKey(publicKey.Hex);
 
             var signature = clone.ComputeSignature(privateKey);
             return clone.DeepCloneWithSignature(signature);

@@ -1,5 +1,4 @@
-﻿using NBitcoin;
-using NBitcoin.Secp256k1;
+﻿using NBitcoin.Secp256k1;
 using Nostr.Client.Utils;
 using System.Security.Cryptography;
 
@@ -22,6 +21,14 @@ namespace Nostr.Client.Keys
         public string Bech32 { get; }
 
         public ECPrivKey Ec { get; }
+
+        /// <summary>
+        /// Derive public key from this private key
+        /// </summary>
+        public NostrPublicKey DerivePublicKey()
+        {
+            return NostrPublicKey.FromPrivateEc(Ec);
+        }
 
         /// <summary>
         /// Sign hex with the private key. 

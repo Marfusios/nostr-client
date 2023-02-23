@@ -1,4 +1,4 @@
-![Logo](nostr.png)
+![Logo](https://raw.githubusercontent.com/Marfusios/nostr-client/master/nostr.png)
 # Nostr client 
 [![.NET Core](https://github.com/Marfusios/nostr-client/actions/workflows/dotnet-core.yml/badge.svg)](https://github.com/Marfusios/nostr-client/actions/workflows/dotnet-core.yml) [![NuGet version](https://badge.fury.io/nu/Nostr.Client.svg)](https://badge.fury.io/nu/Nostr.Client) [![NuGet downloads](https://img.shields.io/nuget/dt/Nostr.Client)](https://www.nuget.org/packages/Nostr.Client)
 
@@ -22,6 +22,8 @@ This library keeps a reliable connection to get real-time data and fast executio
 
 ### Usage
 
+#### Receiving events
+
 ```csharp
 var exitEvent = new ManualResetEvent(false);
 var url = new Uri("wss://relay.damus.io");
@@ -44,7 +46,24 @@ await communicator.Start();
 exitEvent.WaitOne(TimeSpan.FromSeconds(30));
 ```
 
+#### Sending event
+
+```csharp
+var ev = new NostrEvent
+{
+    Kind = NostrKind.ShortTextNote,
+    CreatedAt = DateTime.UtcNow,
+    Content = "Test message from C# client"
+};
+
+var key = NostrPrivateKey.FromBech32("nsec1xxx");
+var signed = ev.Sign(key);
+
+client.Send(new NostrEventRequest(signed));
+```
+
 More usage examples:
+* Tests ([link](tests/Nostr.Client.Tests))
 * Console sample ([link](test_integration/Nostr.Client.Sample.Console/Program.cs))
 * Blazor sample ([link](test_integration/Nostr.Client.Sample.Blazor), [deployed](https://nostr.mkotas.cz))
 

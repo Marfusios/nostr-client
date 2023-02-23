@@ -42,6 +42,14 @@
         }
 
         /// <summary>
+        /// Create key pair based on private key
+        /// </summary>
+        public static NostrKeyPair From(NostrPrivateKey privateKey)
+        {
+            return new NostrKeyPair(privateKey);
+        }
+
+        /// <summary>
         /// Generate a new random key pair
         /// </summary>
         public static NostrKeyPair GenerateNew()

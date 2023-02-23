@@ -10,7 +10,7 @@ namespace Nostr.Client.Tests
         [InlineData("34a3e00bcd58050ae4ee8227389240266948dfb7d88239f1e89adc15427dfa05", "7d89d8818771bd6b3e10b868f52f9ddc0014fa0207d51729cf3acd2c7944663b")]
         public void Construct_FromPrivateKeyHex_ShouldBeCorrect(string privateKey, string expectedPublicKey)
         {
-            var pair = new NostrKeyPair(NostrPrivateKey.FromHex(privateKey));
+            var pair = NostrKeyPair.From(NostrPrivateKey.FromHex(privateKey));
 
             Assert.Equal(expectedPublicKey, pair.PublicKey.Hex);
             Assert.Equal(NostrConverter.ToNpub(pair.PublicKey.Hex), pair.PublicKey.Bech32);
@@ -22,7 +22,7 @@ namespace Nostr.Client.Tests
         [InlineData("nsec1k0u6cj3c3eyaey7vphy7nrq2eudfdns8qrdkf0j665xagxhf83rs5gkn58", "npub15zwr0rspve52gnj2lhhw3s74nud9yz6qsgsfds3hxmuv52v5ljxsulkqmy")]
         public void Construct_FromPrivateKeyBech32_ShouldBeCorrect(string privateKey, string expectedPublicKey)
         {
-            var pair = new NostrKeyPair(NostrPrivateKey.FromBech32(privateKey));
+            var pair = NostrKeyPair.From(NostrPrivateKey.FromBech32(privateKey));
 
             Assert.Equal(expectedPublicKey, pair.PublicKey.Bech32);
             Assert.Equal(NostrConverter.ToHex(pair.PublicKey.Bech32, out _), pair.PublicKey.Hex);
