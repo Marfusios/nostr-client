@@ -98,49 +98,12 @@ body {
     background-color: var(--fill-color);
 }
 
-.navigation {
-    grid-area: navigation;
-    background-color: var(--fill-color);
-    color: var(--neutral-foreground-rest);
-    padding-left: calc(var(--design-unit) * 3px);
-    position: fixed;
-    top: 70px;
-    left: 0;
-    z-index: 1;
-}
-
-    .navigation > ul {
-        list-style: none;
-        padding: 0;
-    }
-
-        .navigation > ul > li {
-            margin-bottom: 10px;
-        }
-
-    .navigation h1 {
-        font-size: var(--type-ramp-plus-1-font-size);
-        line-height: var(--type-ramp-plus-1-line-height);
-        padding: 15px calc((10 + (var(--design-unit) * 2 * var(--density))) * 1px);
-        margin: 0;
-    }
-
-    .navigation fluent-anchor {
-        width: 100%;
-    }
-
-        .navigation fluent-anchor::part(control) {
-            justify-content: start;
-        }
-
 .content {
     grid-area: content;
     --elevation: 2;
     background-color: var(--fill-color);
     color: var(--neutral-foreground-rest);
-    padding-inline-start: calc(var(--design-unit) * 6px);
     padding-inline-end: calc(var(--design-unit) * 6px);
-    margin-left: 60px;
 }
 
 .dialog-content {

@@ -1,3 +1,40 @@
+.navigation {
+    background-color: var(--fill-color);
+    color: var(--neutral-foreground-rest);
+    z-index: 0;
+    width: 160px;
+}
+
+.navigation-inner {
+    padding-left: calc(var(--design-unit) * 3px);
+    position: fixed;
+    top: 70px;
+    left: 0;
+}
+
+    .navigation-inner > ul {
+        list-style: none;
+        padding: 0;
+    }
+
+        .navigation-inner > ul > li {
+            margin-bottom: 10px;
+        }
+
+    .navigation-inner h1 {
+        font-size: var(--type-ramp-plus-1-font-size);
+        line-height: var(--type-ramp-plus-1-line-height);
+        padding: 15px calc((10 + (var(--design-unit) * 2 * var(--density))) * 1px);
+        margin: 0;
+    }
+
+    .navigation-inner fluent-anchor {
+        width: 100%;
+    }
+
+        .navigation-inner fluent-anchor::part(control) {
+            justify-content: start;
+        }
 
 .nav-item {
     font-size: 0.9rem;
@@ -21,19 +58,31 @@
         line-height: 3rem;
     }
 
-.nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.25);
-    color: white;
-}
+        .nav-item ::deep a.active {
+            background-color: rgba(255,255,255,0.25);
+            color: white;
+        }
 
-.nav-item ::deep a:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
-}
+        .nav-item ::deep a:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+        }
 
-@media (min-width: 641px) {
+@media (max-width: 1024px) {
     .navbar-toggler {
         display: none;
+    }
+
+    .navigation {
+        width: 80px;
+    }
+
+    .nav-item-text {
+        display: none;
+    }
+
+    .navigation-inner > ul > li:hover .nav-item-text {
+        display: inherit;
     }
 
     .collapse {

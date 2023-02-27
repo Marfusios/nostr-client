@@ -5,6 +5,9 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<IsPackable>true</IsPackable>
+
+		<PublishFluentIconAssets>true</PublishFluentIconAssets>
+		<PublishFluentEmojiAssets>true</PublishFluentEmojiAssets>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -1,19 +1,45 @@
 ﻿@inject NavigationManager NavigationManager
 
-<ul>
-    <li>
-        <FluentAnchor Href="relay" Appearance=@SetAppearance("Relay")>Relay <FluentIcon Slot="start" Name="@FluentIcons.CloudLink" Size="@IconSize.Size20" Color="Color.Accent" /></FluentAnchor>
-    </li>
-    <li>
-        <FluentAnchor Href="query" Appearance=@SetAppearance("Query")>Query Tool <FluentIcon Slot="start" Name="@FluentIcons.ChatBubblesQuestion" Size="@IconSize.Size20" Color="Color.Accent" /></FluentAnchor>
-    </li>
-    <li>
-        <FluentAnchor Href="converter" Appearance=@SetAppearance("Converter")>Converter <FluentIcon Slot="start" Name="@FluentIcons.ConvertRange" Size="@IconSize.Size20" Color="Color.Accent" /></FluentAnchor>
-    </li>
-    <li>
-        <FluentAnchor Href="keys" Appearance=@SetAppearance("Keys")>Keys <FluentIcon Slot="start" Name="@FluentIcons.Key" Size="@IconSize.Size20" Color="Color.Accent" /></FluentAnchor>
-    </li>
-</ul>
+<div class="navigation">
+    <div class="navigation-inner">
+
+        <ul>
+            <li>
+                <FluentAnchor Href="relay" Appearance=@SetAppearance("Relay")>
+                    <FluentIcon Slot="start" Name="@FluentIcons.CloudLink" Size="@IconSize.Size20" Color="Color.Accent"/>
+                    <span class="nav-item-text">
+                        Relay
+                    </span>
+                </FluentAnchor>
+            </li>
+            <li>
+                <FluentAnchor Href="query" Appearance=@SetAppearance("Query")>
+                    <FluentIcon Slot="start" Name="@FluentIcons.ChatBubblesQuestion" Size="@IconSize.Size20" Color="Color.Accent"/>
+                    <span class="nav-item-text">
+                        Query Tool
+                    </span>
+                </FluentAnchor>
+            </li>
+            <li>
+                <FluentAnchor Href="converter" Appearance=@SetAppearance("Converter")>
+                    <FluentIcon Slot="start" Name="@FluentIcons.ConvertRange" Size="@IconSize.Size20" Color="Color.Accent"/>
+                    <span class="nav-item-text">
+                        Converter
+                    </span>
+                </FluentAnchor>
+            </li>
+            <li>
+                <FluentAnchor Href="keys" Appearance=@SetAppearance("Keys")>
+                    <FluentIcon Slot="start" Name="@FluentIcons.Key" Size="@IconSize.Size20" Color="Color.Accent"/>
+                    <span class="nav-item-text">
+                        Keys
+                    </span>
+                </FluentAnchor>
+            </li>
+        </ul>
+
+    </div>
+</div>
 
 @code {
     private string? _target;
