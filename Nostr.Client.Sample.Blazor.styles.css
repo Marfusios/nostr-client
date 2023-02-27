@@ -1,6 +1,43 @@
 @import '_content/Microsoft.Fast.Components.FluentUI/Microsoft.Fast.Components.FluentUI.bundle.scp.css';
 
 /* /Components/NavMenu.razor.rz.scp.css */
+.navigation[b-mqb85nvxcg] {
+    background-color: var(--fill-color);
+    color: var(--neutral-foreground-rest);
+    z-index: 0;
+    width: 160px;
+}
+
+.navigation-inner[b-mqb85nvxcg] {
+    padding-left: calc(var(--design-unit) * 3px);
+    position: fixed;
+    top: 70px;
+    left: 0;
+}
+
+    .navigation-inner > ul[b-mqb85nvxcg] {
+        list-style: none;
+        padding: 0;
+    }
+
+        .navigation-inner > ul > li[b-mqb85nvxcg] {
+            margin-bottom: 10px;
+        }
+
+    .navigation-inner h1[b-mqb85nvxcg] {
+        font-size: var(--type-ramp-plus-1-font-size);
+        line-height: var(--type-ramp-plus-1-line-height);
+        padding: 15px calc((10 + (var(--design-unit) * 2 * var(--density))) * 1px);
+        margin: 0;
+    }
+
+    .navigation-inner fluent-anchor[b-mqb85nvxcg] {
+        width: 100%;
+    }
+
+        .navigation-inner fluent-anchor[b-mqb85nvxcg]::part(control) {
+            justify-content: start;
+        }
 
 .nav-item[b-mqb85nvxcg] {
     font-size: 0.9rem;
@@ -24,19 +61,31 @@
         line-height: 3rem;
     }
 
-.nav-item[b-mqb85nvxcg]  a.active {
-    background-color: rgba(255,255,255,0.25);
-    color: white;
-}
+        .nav-item[b-mqb85nvxcg]  a.active {
+            background-color: rgba(255,255,255,0.25);
+            color: white;
+        }
 
-.nav-item[b-mqb85nvxcg]  a:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
-}
+        .nav-item[b-mqb85nvxcg]  a:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+        }
 
-@media (min-width: 641px) {
+@media (max-width: 1024px) {
     .navbar-toggler[b-mqb85nvxcg] {
         display: none;
+    }
+
+    .navigation[b-mqb85nvxcg] {
+        width: 80px;
+    }
+
+    .nav-item-text[b-mqb85nvxcg] {
+        display: none;
+    }
+
+    .navigation-inner > ul > li:hover .nav-item-text[b-mqb85nvxcg] {
+        display: inherit;
     }
 
     .collapse[b-mqb85nvxcg] {
