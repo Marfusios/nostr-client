@@ -56,11 +56,11 @@
 
                 <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
                     
-                    <FluentNumberField Value="@_hoursSince" @oninput="SetSince">
+                    <FluentNumberField ValueExpression="() => _hoursSince" Value="@_hoursSince" @oninput="SetSince">
                         <strong>Since (hours)</strong>
                     </FluentNumberField>
                 
-                    <FluentNumberField Value="@_hoursUntil" @oninput="SetUntil">
+                    <FluentNumberField ValueExpression="() => _hoursUntil" Value="@_hoursUntil" @oninput="SetUntil">
                         <strong>Until (hours)</strong>
                     </FluentNumberField>
                     
@@ -72,7 +72,7 @@
 
                 </Stack>
 
-                <FluentNumberField Min="0" Value="@_filter.Limit" @oninput="SetLimit">
+                <FluentNumberField Min="0" ValueExpression="() => _filter.Limit" Value="@_filter.Limit" @oninput="SetLimit">
                     <strong>Limit</strong>
                 </FluentNumberField>
 
@@ -154,7 +154,7 @@
                     </FluentButton>
 
                     <span>Page size</span>
-                    <FluentNumberField Min="0" Value="@_pagination.ItemsPerPage" @onchange="SetPagination" style="width: 80px">
+                    <FluentNumberField Min="0" ValueExpression="() => _pagination.ItemsPerPage" Value="@_pagination.ItemsPerPage" @onchange="SetPagination" style="width: 80px">
                     </FluentNumberField>
                 </Stack>
 

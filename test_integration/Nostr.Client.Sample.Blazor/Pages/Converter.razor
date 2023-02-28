@@ -14,7 +14,7 @@
                VerticalGap="20" 
                HorizontalGap="20">
            
-            <FluentTextField Style="width: 100%" Placeholder="npub1xxx" Value="@_bech32Key" @oninput="Bech32Set">
+            <FluentTextField Style="width: 100%" Placeholder="npub1xxx" ValueExpression="() => _bech32Key" Value="@_bech32Key" @oninput="Bech32Set">
                 <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
                 <strong>Bech32 key</strong>
             </FluentTextField>
@@ -24,7 +24,7 @@
                 <FluentCombobox Items="@_prefixes" Value="@_prefix" ValueChanged="@PrefixSet"></FluentCombobox>
             </Stack>
 
-            <FluentTextField style="width: 100%" Placeholder="" Value="@_hexKey" @oninput="HexSet">
+            <FluentTextField style="width: 100%" Placeholder="" ValueExpression="() => _hexKey" Value="@_hexKey" @oninput="HexSet">
                 <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" Variant="IconVariant.Filled" />
                 <strong>Hex key</strong>
             </FluentTextField>

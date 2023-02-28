@@ -39,7 +39,7 @@
     <h3><FluentIcon Name="@FluentIcons.ArrowCircleRight" Size="@IconSize.Size20" Variant="@IconVariant.Regular" Color="@Color.Neutral" /> Derivation</h3>
     
     <div class="conversion-group">
-        <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" Value="@_privateKey" @oninput="PrivateKeySet" class="m-b-1">
+        <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" ValueExpression="() => _privateKey" Value="@_privateKey" @oninput="PrivateKeySet" class="m-b-1">
             <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
             <strong>Private key</strong>
         </FluentTextField>
@@ -66,17 +66,17 @@
     <h3><FluentIcon Name="@FluentIcons.Shield" Size="@IconSize.Size20" Variant="@IconVariant.Regular" Color="@Color.Neutral" /> Signing</h3>
     
     <div class="conversion-group">
-        <FluentTextField Style="width: 100%" Placeholder="npub1xxx or nsec1xxx" Value="@_publicOrPrivateKeyForSignature" @oninput="SignaturePrivateKeySet" class="m-b-1">
+        <FluentTextField Style="width: 100%" Placeholder="npub1xxx or nsec1xxx" ValueExpression="() => _publicOrPrivateKeyForSignature" Value="@_publicOrPrivateKeyForSignature" @oninput="SignaturePrivateKeySet" class="m-b-1">
             <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
             <strong>Public or private key</strong>
         </FluentTextField>
         
-        <FluentTextField Style="width: 100%" Placeholder="hex" Value="@_dataForSignature" @oninput="SignatureDataSet" class="m-b-1">
+        <FluentTextField Style="width: 100%" Placeholder="hex" ValueExpression="() => _dataForSignature" Value="@_dataForSignature" @oninput="SignatureDataSet" class="m-b-1">
             <FluentIcon Name="@FluentIcons.Document" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
             <strong>Data</strong>
         </FluentTextField>
         
-        <FluentTextField Style="width: 100%" Placeholder="hex" Value="@_signature" @oninput="SignatureSet" class="m-b-2">
+        <FluentTextField Style="width: 100%" Placeholder="hex" ValueExpression="() => _signature" Value="@_signature" @oninput="SignatureSet" class="m-b-2">
             <FluentIcon Name="@FluentIcons.Signature" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
             <strong>Signature</strong>
         </FluentTextField>

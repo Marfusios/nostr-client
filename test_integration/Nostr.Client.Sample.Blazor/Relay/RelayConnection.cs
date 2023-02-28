@@ -13,7 +13,10 @@ namespace Nostr.Client.Sample.Blazor.Relay
         public static readonly HashSet<string> DefaultRelays = new(new[]{
             "wss://relay.snort.social",
             "wss://relay.damus.io",
-            "wss://nostr-pub.wellorder.net"
+            "wss://nostr-pub.wellorder.net",
+            "wss://nos.lol",
+            "wss://nostr.wine",
+            "wss://brb.io"
         });
 
         private readonly ILogger<RelayConnection> _logger;
