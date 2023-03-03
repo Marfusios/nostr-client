@@ -10,18 +10,21 @@ using Websocket.Client;
 
 namespace Nostr.Client.Client
 {
-    public class NostrWebsocketClient : IDisposable
+    /// <summary>
+    /// Nostr client that connects to a single relay. 
+    /// Subscribe to `Streams` to handle received messages.
+    /// </summary>
+    public class NostrWebsocketClient : INostrClient
     {
         private readonly ILogger<NostrWebsocketClient> _logger;
-        private readonly INostrCommunicator _communicator;
         private readonly IDisposable? _messageReceivedSubscription;
         private readonly JsonSerializerSettings _jsonSettings;
 
         public NostrWebsocketClient(INostrCommunicator communicator, ILogger<NostrWebsocketClient>? logger)
         {
             _logger = logger ?? new NullLogger<NostrWebsocketClient>();
-            _communicator = communicator;
-            _messageReceivedSubscription = _communicator.MessageReceived.Subscribe(HandleMessage);
+            Communicator = communicator;
+            _messageReceivedSubscription = Communicator.MessageReceived.Subscribe(HandleMessage);
 
             // cache settings, avoid getting new instance all the time
             _jsonSettings = NostrSerializer.Settings;
@@ -31,6 +34,11 @@ namespace Nostr.Client.Client
         {
             _messageReceivedSubscription?.Dispose();
         }
+
+        /// <summary>
+        /// Underlying communicator
+        /// </summary>
+        public INostrCommunicator Communicator { get; }
 
         /// <summary>
         /// Provided message streams
@@ -52,7 +60,7 @@ namespace Nostr.Client.Client
                 }
 
                 var serialized = JsonConvert.SerializeObject(request, _jsonSettings);
-                _communicator.Send(serialized);
+                Communicator.Send(serialized);
             }
             catch (Exception e)
             {
@@ -72,28 +80,28 @@ namespace Nostr.Client.Client
                     return;
                 }
 
-                Streams.UnknownRawSubject.OnNext(message);
+                Streams.UnknownRawSubject.OnNext(Raw(message));
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Exception while receiving message");
-                Streams.UnknownRawSubject.OnNext(message);
+                Streams.UnknownRawSubject.OnNext(Raw(message));
             }
         }
 
         private void OnArrayMessage(string formatted, ResponseMessage originalMessage)
         {
-            var parsed = Deserialize<JArray>(formatted);
+            var parsed = DeserializeRaw(formatted);
             if (parsed.Count <= 0)
             {
-                Streams.UnknownRawSubject.OnNext(originalMessage);
+                Streams.UnknownRawSubject.OnNext(Raw(originalMessage));
                 return;
             }
 
             var messageTypeToken = parsed[0];
             if (messageTypeToken.Type != JTokenType.String)
             {
-                Streams.UnknownRawSubject.OnNext(originalMessage);
+                Streams.UnknownRawSubject.OnNext(Raw(originalMessage));
                 return;
             }
 
@@ -115,10 +123,27 @@ namespace Nostr.Client.Client
             }
         }
 
-        private static T Deserialize<T>(string content)
+        private JArray DeserializeRaw(string content)
         {
-            return JsonConvert.DeserializeObject<T>(content) ??
+            return JsonConvert.DeserializeObject<JArray>(content, _jsonSettings) ??
+                               throw new InvalidOperationException("Deserialized initial array is null, cannot continue");
+        }
+
+        private T Deserialize<T>(string content) where T : NostrResponse
+        {
+            var deserialized = JsonConvert.DeserializeObject<T>(content, _jsonSettings) ??
                    throw new InvalidOperationException("Deserialized message is null, cannot continue");
+            deserialized.CommunicatorName = Communicator.Name;
+            return deserialized;
+        }
+
+        private NostrRawResponse Raw(ResponseMessage message)
+        {
+            return new NostrRawResponse()
+            {
+                Message = message,
+                CommunicatorName = Communicator.Name
+            };
         }
     }
 }

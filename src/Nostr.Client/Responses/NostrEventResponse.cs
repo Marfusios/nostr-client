@@ -4,7 +4,7 @@ using Nostr.Client.Json;
 
 namespace Nostr.Client.Responses
 {
-    [DebuggerDisplay("{MessageType} - {Subscription}")]
+    [DebuggerDisplay("[{CommunicatorName}] {MessageType} - {Subscription}")]
     public class NostrEventResponse : NostrResponse
     {
         [ArrayProperty(1)]

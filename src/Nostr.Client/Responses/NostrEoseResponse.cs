@@ -3,7 +3,7 @@ using Nostr.Client.Json;
 
 namespace Nostr.Client.Responses
 {
-    [DebuggerDisplay("{MessageType} - {Subscription}")]
+    [DebuggerDisplay("[{CommunicatorName}] {MessageType} - {Subscription}")]
     public class NostrEoseResponse : NostrResponse
     {
         [ArrayProperty(1)]

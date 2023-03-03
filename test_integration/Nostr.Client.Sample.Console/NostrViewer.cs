@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Nostr.Client.Client;
 using Nostr.Client.Messages;
 using Nostr.Client.Requests;
-using Nostr.Client.Responses;
 using Nostr.Client.Responses.Contacts;
 using Nostr.Client.Responses.Metadata;
 using Serilog;
@@ -12,28 +11,29 @@ namespace Nostr.Client.Sample.Console
 {
     internal class NostrViewer
     {
-        private readonly NostrWebsocketClient _client;
+        private readonly INostrClient _client;
 
-        public NostrViewer(NostrWebsocketClient client)
+        public NostrViewer(INostrClient client)
         {
             _client = client;
         }
 
         public void Subscribe()
         {
-            IObservable<NostrEvent> events = _client.Streams.EventStream
-                .Select(x => x.Event)
-                .Where(x => x != null)!;
+            var events = _client.Streams.EventStream
+                .Where(x => x.Event != null);
 
             events.Subscribe(x =>
-                Log.Information("{kind}: {content}", x.Kind, x.Content));
+                Log.Information("[{relay}] {kind}: {content}", x.CommunicatorName, x.Event?.Kind, x.Event?.Content));
 
             events
+                .Select(x => x.Event!)
                 .OfType<NostrMetadataEvent>()
                 .Subscribe(x =>
                     Log.Information("Name: {name}, about: {about}", x.Metadata?.Name, x.Metadata?.About));
 
             events
+                .Select(x => x.Event!)
                 .OfType<NostrContactEvent>()
                 .Subscribe(x =>
                 {
@@ -44,10 +44,10 @@ namespace Nostr.Client.Sample.Console
                     }
                 });
 
-            _client.Streams.NoticeStream.Subscribe(x => Log.Information("Notice: {message}", x.Message));
-            _client.Streams.EoseStream.Subscribe(x => Log.Information("EOSE of subscription {subscription}", x.Subscription));
-            _client.Streams.UnknownMessageStream.Subscribe(x => Log.Information("Unknown {messageType} message, data: {data}", x.MessageType, JsonConvert.SerializeObject(x.AdditionalData)));
-            _client.Streams.UnknownRawStream.Subscribe(x => Log.Warning("Unknown data: {data}", x.ToString()));
+            _client.Streams.NoticeStream.Subscribe(x => Log.Information("[{relay}] Notice: {message}", x.CommunicatorName, x.Message));
+            _client.Streams.EoseStream.Subscribe(x => Log.Information("[{relay}] EOSE of subscription {subscription}", x.CommunicatorName, x.Subscription));
+            _client.Streams.UnknownMessageStream.Subscribe(x => Log.Information("[{relay}] Unknown {messageType} message, data: {data}", x.CommunicatorName, x.MessageType, JsonConvert.SerializeObject(x.AdditionalData)));
+            _client.Streams.UnknownRawStream.Subscribe(x => Log.Warning("[{relay}] Unknown data: {data}", x.CommunicatorName, x.Message?.ToString()));
         }
 
         public void SendRequests()
@@ -75,7 +75,9 @@ namespace Nostr.Client.Sample.Console
                     "e33fe65f1fde44c6dc17eeb38fdad0fceaf1cae8722084332ed1e32496291d42",
                     "a341f45ff9758f570a21b000c17d4e53a3a497c8397f26c0e6d61e5acffc7a98",
                     "83e818dfbeccea56b0f551576b3fd39a7a50e1d8159343500368fa085ccd964b",
-                    "7fa56f5d6962ab1e3cd424e758c3002b8665f7b0d8dcee9fe9e288d7751ac194"
+                    "7fa56f5d6962ab1e3cd424e758c3002b8665f7b0d8dcee9fe9e288d7751ac194",
+                    "46bb7d86f84da649ff8a2404533de360d7baa6fe48fc03f779848c5f4c95d3b9",
+                    "a575563c6b5b7a029f472e859ec2af026938cd8a03cf0fe2e6b82472b54aa638"
                 },
                 Kinds = new[]
                 {

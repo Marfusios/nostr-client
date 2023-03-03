@@ -2,7 +2,11 @@
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
+using Newtonsoft.Json;
 using Nostr.Client.Communicator;
+using Nostr.Client.Json;
+using Nostr.Client.Requests;
+using Nostr.Client.Responses;
 using Websocket.Client;
 using Websocket.Client.Models;
 
@@ -14,6 +18,11 @@ namespace Nostr.Client.Tests
         private readonly List<string> _sentMessages = new();
 
         public IReadOnlyCollection<string> SentMessages => _sentMessages;
+
+        public NostrFakeCommunicator()
+        {
+            Name = $"fake-{Guid.NewGuid()}";
+        }
 
         public void Dispose()
         {
@@ -52,6 +61,17 @@ namespace Nostr.Client.Tests
         public void Send(string message)
         {
             _sentMessages.Add(message);
+
+            var parsed = JsonConvert.DeserializeObject<NostrEventRequest>(message, NostrSerializer.Settings);
+            var response = new NostrEventResponse
+            {
+                MessageType = parsed?.Type,
+                Subscription = "fake-subscription",
+                Event = parsed?.Event
+            };
+            var responseParsed = JsonConvert.SerializeObject(response, NostrSerializer.Settings);
+
+            _messageSubject.OnNext(ResponseMessage.TextMessage(responseParsed));
         }
 
         public void Send(byte[] message)
@@ -94,12 +114,12 @@ namespace Nostr.Client.Tests
         public IObservable<DisconnectionInfo> DisconnectionHappened => Observable.Empty<DisconnectionInfo>();
         public TimeSpan? ReconnectTimeout { get; set; }
         public TimeSpan? ErrorReconnectTimeout { get; set; }
-        public string Name { get; set; } = "fake";
+        public string Name { get; set; }
         public bool IsStarted { get; private set; }
         public bool IsRunning { get; private set; }
         public bool IsReconnectionEnabled { get; set; }
         public bool IsTextMessageConversionEnabled { get; set; }
-        public ClientWebSocket NativeClient { get; }
+        public ClientWebSocket NativeClient { get; } = null!;
         public Encoding MessageEncoding { get; set; } = Encoding.UTF8;
     }
 }

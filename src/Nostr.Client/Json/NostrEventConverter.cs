@@ -16,7 +16,7 @@ namespace Nostr.Client.Json
 
         public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
-            throw new NotImplementedException();
+            NostrSerializer.Serializer.Serialize(writer, value);
         }
 
         public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)

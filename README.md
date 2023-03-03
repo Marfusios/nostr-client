@@ -62,6 +62,23 @@ var signed = ev.Sign(key);
 client.Send(new NostrEventRequest(signed));
 ```
 
+#### Multi relays support
+
+```csharp
+var relays = new[]
+{
+    new NostrWebsocketCommunicator(new Uri("wss://relay.snort.social")),
+    new NostrWebsocketCommunicator(new Uri("wss://relay.damus.io")),
+    new NostrWebsocketCommunicator(new Uri("wss://nos.lol"))
+};
+
+var client = new NostrMultiWebsocketClient(NullLogger<NostrWebsocketClient>.Instance, relays);
+
+client.Streams.EventStream.Subscribe(HandleEvent);
+
+relays.ToList().ForEach(relay => relay.Start());
+```
+
 More usage examples:
 * Tests ([link](tests/Nostr.Client.Tests))
 * Console sample ([link](test_integration/Nostr.Client.Sample.Console/Program.cs))

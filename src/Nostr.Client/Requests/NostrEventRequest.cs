@@ -8,6 +8,12 @@ namespace Nostr.Client.Requests
     [JsonConverter(typeof(ArrayConverter))]
     public class NostrEventRequest
     {
+        // for deserialization in tests
+        private NostrEventRequest()
+        {
+            Event = null!;
+        }
+
         public NostrEventRequest(NostrEvent eventData)
         {
             Event = eventData;

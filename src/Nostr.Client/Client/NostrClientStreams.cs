@@ -1,7 +1,6 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Nostr.Client.Responses;
-using Websocket.Client;
 
 namespace Nostr.Client.Client
 {
@@ -12,7 +11,7 @@ namespace Nostr.Client.Client
         internal readonly Subject<NostrEoseResponse> EoseSubject = new();
 
         internal readonly Subject<NostrResponse> UnknownMessageSubject = new();
-        internal readonly Subject<ResponseMessage> UnknownRawSubject = new();
+        internal readonly Subject<NostrRawResponse> UnknownRawSubject = new();
 
         /// <summary>
         /// Requested Nostr events
@@ -37,7 +36,7 @@ namespace Nostr.Client.Client
         /// <summary>
         /// Unknown messages that are not even in the parseable format
         /// </summary>
-        public IObservable<ResponseMessage> UnknownRawStream => UnknownRawSubject.AsObservable();
+        public IObservable<NostrRawResponse> UnknownRawStream => UnknownRawSubject.AsObservable();
 
     }
 }

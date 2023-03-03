@@ -14,6 +14,7 @@ namespace Nostr.Client.Json
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
             Formatting = Formatting.None,
             NullValueHandling = NullValueHandling.Ignore,
+            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
             Converters = new List<JsonConverter>
             {
                 new UnixDateTimeConverter()
@@ -29,6 +30,7 @@ namespace Nostr.Client.Json
             ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
             Formatting = Formatting.None,
             NullValueHandling = NullValueHandling.Ignore,
+            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
             Converters = new List<JsonConverter>
             {
                 new ArrayConverter(),

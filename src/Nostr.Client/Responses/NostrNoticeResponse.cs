@@ -3,7 +3,7 @@ using Nostr.Client.Json;
 
 namespace Nostr.Client.Responses
 {
-    [DebuggerDisplay("{MessageType} - {Message}")]
+    [DebuggerDisplay("[{CommunicatorName}] {MessageType} - {Message}")]
     public class NostrNoticeResponse : NostrResponse
     {
         [ArrayProperty(1)]

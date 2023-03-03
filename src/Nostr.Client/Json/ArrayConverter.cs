@@ -23,6 +23,58 @@ namespace Nostr.Client.Json
         }
 
         /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        {
+            if (value == null)
+                return;
+
+            writer.WriteStartArray();
+            var props = value.GetType().GetProperties();
+            var ordered = props.OrderBy(p => GetCustomAttribute<ArrayPropertyAttribute>(p)?.Index);
+
+            var last = -1;
+            foreach (var prop in ordered)
+            {
+                var arrayProp = GetCustomAttribute<ArrayPropertyAttribute>(prop);
+                if (arrayProp == null)
+                    continue;
+
+                if (arrayProp.Index == last)
+                    continue;
+
+                while (arrayProp.Index != last + 1)
+                {
+                    writer.WriteValue((string?)null);
+                    last += 1;
+                }
+
+                last = arrayProp.Index;
+                var converterAttribute = GetCustomAttribute<JsonConverterAttribute>(prop);
+                if (converterAttribute != null)
+                    writer.WriteRawValue(
+                        JsonConvert.SerializeObject(prop.GetValue(value),
+                        (JsonConverter?)Activator.CreateInstance(converterAttribute.ConverterType) ?? throw new InvalidOperationException("Cannot create JsonConverter")));
+                else if (!IsSimple(prop.PropertyType))
+                    NostrSerializer.Serializer.Serialize(writer, prop.GetValue(value));
+                else
+                    writer.WriteValue(prop.GetValue(value));
+            }
+
+            if (value is IHaveAdditionalData valueWithData)
+            {
+                foreach (var additional in valueWithData.AdditionalData)
+                {
+                    if (!IsSimple(additional.GetType()))
+                        NostrSerializer.Serializer.Serialize(writer, additional);
+                    else
+                        writer.WriteValue(additional);
+                }
+            }
+
+            writer.WriteEndArray();
+        }
+
+        /// <inheritdoc />
         public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             if (reader.TokenType == JsonToken.Null)
@@ -31,7 +83,7 @@ namespace Nostr.Client.Json
             if (objectType == typeof(JToken))
                 return JToken.Load(reader);
 
-            var result = Activator.CreateInstance(objectType);
+            var result = Activator.CreateInstance(objectType, true);
             var arr = JArray.Load(reader);
             return ParseObject(arr, result, objectType);
         }
@@ -142,58 +194,6 @@ namespace Nostr.Client.Json
             }
 
             return result;
-        }
-
-        /// <inheritdoc />
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value == null)
-                return;
-
-            writer.WriteStartArray();
-            var props = value.GetType().GetProperties();
-            var ordered = props.OrderBy(p => GetCustomAttribute<ArrayPropertyAttribute>(p)?.Index);
-
-            var last = -1;
-            foreach (var prop in ordered)
-            {
-                var arrayProp = GetCustomAttribute<ArrayPropertyAttribute>(prop);
-                if (arrayProp == null)
-                    continue;
-
-                if (arrayProp.Index == last)
-                    continue;
-
-                while (arrayProp.Index != last + 1)
-                {
-                    writer.WriteValue((string?)null);
-                    last += 1;
-                }
-
-                last = arrayProp.Index;
-                var converterAttribute = GetCustomAttribute<JsonConverterAttribute>(prop);
-                if (converterAttribute != null)
-                    writer.WriteRawValue(
-                        JsonConvert.SerializeObject(prop.GetValue(value),
-                        (JsonConverter?)Activator.CreateInstance(converterAttribute.ConverterType) ?? throw new InvalidOperationException("Cannot create JsonConverter")));
-                else if (!IsSimple(prop.PropertyType))
-                    NostrSerializer.Serializer.Serialize(writer, prop.GetValue(value));
-                else
-                    writer.WriteValue(prop.GetValue(value));
-            }
-
-            if (value is IHaveAdditionalData valueWithData)
-            {
-                foreach (var additional in valueWithData.AdditionalData)
-                {
-                    if (!IsSimple(additional.GetType()))
-                        NostrSerializer.Serializer.Serialize(writer, additional);
-                    else
-                        writer.WriteValue(additional);
-                }
-            }
-
-            writer.WriteEndArray();
         }
 
         private static bool IsSimple(Type type)

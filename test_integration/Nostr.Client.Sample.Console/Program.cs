@@ -1,10 +1,15 @@
-﻿using System.Net.WebSockets;
+﻿using System;
+using System.Net.WebSockets;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Nostr.Client.Client;
 using Nostr.Client.Communicator;
+using Nostr.Client.Keys;
+using Nostr.Client.Messages;
+using Nostr.Client.Requests;
+using Nostr.Client.Responses;
 using Nostr.Client.Sample.Console;
 using Serilog;
 using Serilog.Events;
@@ -28,34 +33,31 @@ Log.Debug("====================================");
 Log.Debug("              STARTING              ");
 Log.Debug("====================================");
 
-var url = new Uri("wss://relay.snort.social");
-// var url = new Uri("wss://relay.damus.io");
-// var url = new Uri("wss://eden.nostr.land");
-// var url = new Uri("wss://nostr-pub.wellorder.net");
-
-using var communicator = new NostrWebsocketCommunicator(url, () =>
+var relays = new[]
 {
-    var client = new ClientWebSocket();
-    client.Options.SetRequestHeader("Origin", "http://localhost");
-    return client;
-});
+    new Uri("wss://relay.snort.social"),
+    new Uri("wss://relay.damus.io"),
+    new Uri("wss://eden.nostr.land"),
+    new Uri("wss://nostr-pub.wellorder.net"),
+    new Uri("wss://nos.lol"),
+};
 
-communicator.Name = $"Nostr {url.Host}";
-communicator.ReconnectTimeout = null; //TimeSpan.FromSeconds(30);
-communicator.ErrorReconnectTimeout = TimeSpan.FromSeconds(60);
+using var multiClient = new NostrMultiWebsocketClient(logFactory.CreateLogger<NostrWebsocketClient>());
+var communicators = new List<NostrWebsocketCommunicator>();
 
-communicator.ReconnectionHappened.Subscribe(info =>
-    Log.Information($"Reconnection happened, type: {info.Type}"));
-communicator.DisconnectionHappened.Subscribe(info =>
-    Log.Information($"Disconnection happened, type: {info.Type}, reason: {info.CloseStatusDescription}"));
+foreach (var relay in relays)
+{
+    var communicator = CreateCommunicator(relay);
+    communicators.Add(communicator);
+    multiClient.RegisterCommunicator(communicator);
+}
 
-using var client = new NostrWebsocketClient(communicator, logFactory.CreateLogger<NostrWebsocketClient>());
-var viewer = new NostrViewer(client);
+var viewer = new NostrViewer(multiClient);
 
 viewer.Subscribe();
-await communicator.StartOrFail();
 
-Log.Debug("Sending requests");
+communicators.ForEach(x => x.Start());
+
 viewer.SendRequests();
 
 exitEvent.WaitOne();
@@ -65,8 +67,12 @@ Log.Debug("              STOPPING              ");
 Log.Debug("====================================");
 Log.CloseAndFlush();
 
-await communicator.Stop(WebSocketCloseStatus.NormalClosure, string.Empty);
-await Task.Delay(TimeSpan.FromSeconds(1));
+foreach (var communicator in communicators)
+{
+    await communicator.Stop(WebSocketCloseStatus.NormalClosure, string.Empty);
+    await Task.Delay(500);
+    communicator.Dispose();
+}
 
 static SerilogLoggerFactory InitLogging()
 {
@@ -82,6 +88,26 @@ static SerilogLoggerFactory InitLogging()
         .CreateLogger();
     Log.Logger = logger;
     return new SerilogLoggerFactory(logger);
+}
+
+NostrWebsocketCommunicator CreateCommunicator(Uri uri)
+{
+    var comm = new NostrWebsocketCommunicator(uri, () =>
+    {
+        var client = new ClientWebSocket();
+        client.Options.SetRequestHeader("Origin", "http://localhost");
+        return client;
+    });
+
+    comm.Name = uri.Host;
+    comm.ReconnectTimeout = null; //TimeSpan.FromSeconds(30);
+    comm.ErrorReconnectTimeout = TimeSpan.FromSeconds(60);
+
+    comm.ReconnectionHappened.Subscribe(info =>
+        Log.Information("[{relay}] Reconnection happened, type: {type}", comm.Name, info.Type));
+    comm.DisconnectionHappened.Subscribe(info =>
+        Log.Information("[{relay}] Disconnection happened, type: {type}, reason: {reason}", comm.Name, info.Type, info.CloseStatus));
+    return comm;
 }
 
 void CurrentDomainOnProcessExit(object? sender, EventArgs eventArgs)
@@ -101,4 +127,19 @@ void ConsoleOnCancelKeyPress(object? sender, ConsoleCancelEventArgs e)
     Log.Warning("Canceling process");
     e.Cancel = true;
     exitEvent.Set();
+}
+
+void SendEvent(NostrWebsocketClient client, int counter)
+{
+    var ev = new NostrEvent
+    {
+        Kind = NostrKind.ShortTextNote,
+        CreatedAt = DateTime.UtcNow,
+        Content = $"Test message {counter} from C# client"
+    };
+
+    var key = NostrPrivateKey.FromBech32("nsec1xjyhgzm2cjv2wp64wnh64d2n4s9ylguhwelekh5r38rlsfgk6mes62duaa");
+    var signed = ev.Sign(key);
+
+    client.Send(new NostrEventRequest(signed));
 }
