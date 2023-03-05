@@ -82,7 +82,7 @@ relays.ToList().ForEach(relay => relay.Start());
 More usage examples:
 * Tests ([link](tests/Nostr.Client.Tests))
 * Console sample ([link](test_integration/Nostr.Client.Sample.Console/Program.cs))
-* Blazor sample ([link](test_integration/Nostr.Client.Sample.Blazor), [deployed](https://nostr.mkotas.cz))
+* Blazor sample ([link](test_integration/Nostr.Client.Sample.Blazor), [deployed](https://nostrdebug.com))
 
 ![image](https://user-images.githubusercontent.com/3494837/219864079-b044327a-3db5-4f22-b738-3160a561b5f3.png)
 
