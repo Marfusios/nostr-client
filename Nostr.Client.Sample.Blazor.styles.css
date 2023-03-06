@@ -119,6 +119,8 @@
     display: flex;
     flex-direction: row;
 }
+/* /Events/NostrEventEdit.razor.rz.scp.css */
+
 /* /Pages/Converter.razor.rz.scp.css */
 .conversion-group[b-m70lnbtcfw] {
     padding-left: 20px;
@@ -176,6 +178,15 @@ fluent-card[b-n7e16r3r7k] {
     border: dotted 2px var(--error);
     border-radius: 10px;
     color: var(--error);
+}
+/* /Pages/Publisher.razor.rz.scp.css */
+.page-layout[b-w8q60iq6qy] {
+    width: 100%;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: minmax(400px, 1fr) 2fr;
+    grid-template-rows: max-content;
+    column-gap: 40px;
 }
 /* /Pages/QueryTool.razor.rz.scp.css */
 .filter-form[b-irjrdv63qb] {
