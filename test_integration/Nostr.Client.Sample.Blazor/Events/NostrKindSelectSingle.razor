@@ -1,0 +1,28 @@
+﻿@using Nostr.Client.Messages
+@inherits FluentInputBase<NostrKind>
+
+<Stack Orientation="Orientation.Vertical" VerticalGap="5">
+    <strong>Kind</strong>
+    <FluentCombobox
+        Items="_allKinds"
+        @bind-Value="CurrentValueAsString">
+    </FluentCombobox>
+</Stack>
+
+@code {
+    private readonly string[] _allKinds = Enum.GetValues(typeof(NostrKind)).Cast<int>().Select(x => x.ToString()).ToArray();
+
+    protected override bool TryParseValueFromString(string? value, out NostrKind result, out string validationErrorMessage)
+    {
+        if (int.TryParse(value, out var parsed))
+        {
+            result = (NostrKind)parsed;
+            validationErrorMessage = string.Empty;
+            return true;
+        }
+
+        result = NostrKind.ShortTextNote;
+        validationErrorMessage = "Failed to parse Kind number";
+        return false;
+    }
+}

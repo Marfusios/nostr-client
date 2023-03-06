@@ -1,0 +1,89 @@
+﻿@using Nostr.Client.Messages
+@inherits FluentInputBase<NostrKind[]>
+
+<Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="0">
+    <strong>Kinds</strong>
+                    
+    <FluentButton Appearance="Appearance.Neutral" @onclick="OnDisplay">
+        <span>@_selectedKindsText</span>
+        @if (_displayKindSelector)
+        {
+            <FluentIcon Name="@FluentIcons.ArrowUp" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral"/>
+        }
+        else
+        {
+            <FluentIcon Name="@FluentIcons.ArrowDown" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral"/>
+        }
+    </FluentButton>
+
+
+    @if (_displayKindSelector)
+    {
+        <FluentSelect @ref="_selectElement"
+                      TOption="NostrKind"
+                      Items="@_allKinds"
+                      Multiple="true"
+                      OptionValue="@(p => p.ToString())"
+                      OptionText="@(p => $"{p.ToString()} [{(int)p}]")"
+                      @bind-SelectedOptions="_selectedKinds"
+                      @onfocusout="OnLostFocus"
+                      >
+        </FluentSelect>
+    }
+</Stack>
+
+@code {
+    private FluentSelect<NostrKind>? _selectElement;
+
+    private readonly NostrKind[] _allKinds = Enum.GetValues(typeof(NostrKind)).Cast<NostrKind>().ToArray();
+    private bool _displayKindSelector;
+
+    private IEnumerable<NostrKind>? _selectedKinds = new[]
+    {
+        NostrKind.Metadata,
+        NostrKind.ShortTextNote
+    };
+    private string _selectedKindsText = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _selectedKinds = CurrentValue ?? Array.Empty<NostrKind>();
+        UpdateSelectedText();
+
+        base.OnInitialized();
+    }
+
+    private async Task OnDisplay()
+    {
+        _displayKindSelector = !_displayKindSelector;
+        UpdateSelected();
+    }
+
+    private void OnLostFocus()
+    {
+        _displayKindSelector = false;
+        UpdateSelected();
+    }
+
+    private void UpdateSelected()
+    {
+        CurrentValue = _selectedKinds?
+            .OrderBy(x => x)
+            .ToArray() ?? Array.Empty<NostrKind>();
+        UpdateSelectedText();
+    }
+
+    private void UpdateSelectedText()
+    {
+        _selectedKindsText = _selectedKinds == null ?
+            string.Empty :
+            string.Join(", ", _selectedKinds.Cast<int>().OrderBy(x => x));
+    }
+
+    protected override bool TryParseValueFromString(string? value, out NostrKind[] result, out string validationErrorMessage)
+    {
+        validationErrorMessage = string.Empty;
+        result = _selectedKinds?.ToArray() ?? Array.Empty<NostrKind>();
+        return true;
+    }
+}

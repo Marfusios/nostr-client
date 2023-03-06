@@ -14,34 +14,34 @@ namespace Nostr.Client.Responses
         /// 32-bytes lowercase hex-encoded sha256 of the the serialized event data
         /// </summary>
         [ArrayProperty(0)]
-        public string? Id { get; init; }
+        public string? Id { get; set; }
 
         /// <summary>
         /// 32-bytes lowercase hex-encoded public key of the event creator
         /// </summary>
         [ArrayProperty(1)]
-        public string? Pubkey { get; init; }
+        public string? Pubkey { get; set; }
 
         [JsonProperty("created_at")]
         [ArrayProperty(2)]
-        public DateTime? CreatedAt { get; init; }
+        public DateTime? CreatedAt { get; set; }
 
         [ArrayProperty(3)]
-        public NostrKind Kind { get; init; }
+        public NostrKind Kind { get; set; }
 
         [ArrayProperty(4)]
-        public NostrEventTag[]? Tags { get; init; } = Array.Empty<NostrEventTag>();
+        public NostrEventTag[]? Tags { get; set; } = Array.Empty<NostrEventTag>();
 
         /// <summary>
         /// Arbitrary string
         /// </summary>
         [ArrayProperty(5)]
-        public string? Content { get; init; }
+        public string? Content { get; set; }
 
         /// <summary>
         /// 64-bytes hex of the signature of the sha256 hash of the serialized event data, which is the same as the "id" field
         /// </summary>
-        public string? Sig { get; init; }
+        public string? Sig { get; set; }
 
         /// <summary>
         /// Additional unparsed data

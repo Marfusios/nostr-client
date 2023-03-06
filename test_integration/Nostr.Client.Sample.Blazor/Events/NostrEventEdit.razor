@@ -1,0 +1,155 @@
+﻿@using Nostr.Client.Responses
+@using System.ComponentModel.DataAnnotations
+@using Nostr.Client.Keys
+@using Nostr.Client.Messages
+@using Nostr.Client.Requests
+@using Nostr.Client.Utils
+@inject RelayConnection NostrRelay
+
+<Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
+    
+    <NostrKindSelectSingle @bind-Value="Event.Kind" @bind-Value:after="OnEventChanged"></NostrKindSelectSingle>
+    
+    <Stack Orientation="Orientation.Vertical" VerticalGap="5">
+        <strong>Created at</strong>
+        <Stack Orientation="Orientation.Horizontal">
+            <InputDateTime @bind-Value="Event.CreatedAt" @bind-Value:after="OnEventChanged"></InputDateTime>
+            <FluentButton Appearance="Appearance.Neutral" @onclick="@(() => Event.CreatedAt = DateTime.Now)" style="height: auto">
+                now
+            </FluentButton>
+        </Stack>
+    </Stack>
+
+    <FluentTextArea style="width: 100%" Placeholder="text" Resize="TextAreaResize.Vertical" @bind-Value="Event.Content" @bind-Value:after="OnEventChanged">
+        <strong>Content</strong>
+    </FluentTextArea>
+    
+    <FluentTextField Style="width: 100%" Disabled="true" ValueExpression="() => Event.Id" Value="@Event.Id">
+        <FluentIcon Name="@FluentIcons.Document" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+        <strong>Id (sha256)</strong>
+    </FluentTextField>
+    
+    <FluentDivider style="width: 100%"></FluentDivider>
+    
+    <Stack Orientation="Orientation.Vertical" VerticalGap="5">
+        
+        <FluentTextField Style="width: 100%" Placeholder="npub1xxx or hex" @bind-Value="Event.Pubkey" @bind-Value:after="OnPubKeyChanged">
+            <FluentIcon Name="@FluentIcons.Person" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+            <strong>Pubkey</strong>
+        </FluentTextField>
+
+        <FluentTextField Style="width: 100%" Placeholder="hex" @bind-Value="Event.Sig" @bind-Value:after="OnSignatureChanged">
+            <FluentIcon Name="@FluentIcons.Signature" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+            <strong>Signature</strong>
+        </FluentTextField>
+        
+        <span>or</span>
+    
+        <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" @bind-Value="_privateKeyStr" @bind-Value:after="OnPrivateKeyChanged">
+            <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
+            <strong>Private key</strong>
+        </FluentTextField>
+        
+    </Stack>
+    
+    <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+        <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
+            Send
+            <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
+        </FluentButton>
+                    
+        @if (_isSending)
+        {
+            <FluentProgressRing></FluentProgressRing>
+        }
+    </Stack>
+
+</Stack>
+
+
+@code {
+    private bool _isSending;
+    private string? _privateKeyStr;
+    private NostrPrivateKey? _privateKey;
+
+    [Parameter]
+    [Required]
+    public NostrEvent Event { get; set; } = new()
+    {
+        Kind = NostrKind.ShortTextNote,
+        CreatedAt = DateTime.Now
+    };
+
+    private void OnSend()
+    {
+        NostrRelay.Client.Send(new NostrEventRequest(Event));
+    }
+
+    private void OnEventChanged()
+    {
+        try
+        {
+            if (_privateKey != null)
+                Event.Pubkey = _privateKey.DerivePublicKey().Hex;
+
+            var id = Event.ComputeId();
+            Event.Id = id;
+
+            if (_privateKey == null)
+                return;
+
+            Event.Sig = Event.ComputeSignature(_privateKey);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to compute id or signature, error: {e.Message}");
+        }
+    }
+
+    private void OnPubKeyChanged()
+    {
+        _privateKey = null;
+        _privateKeyStr = null;
+        OnEventChanged();
+    }
+
+    private void OnSignatureChanged()
+    {
+
+    }
+
+    private void OnPrivateKeyChanged()
+    {
+        try
+        {
+            var hex = TryGetHex(_privateKeyStr, out var hrp);
+            if (hex == null || hrp != "nsec")
+            {
+                _privateKey = null;
+                return;
+            }
+
+            _privateKey = NostrPrivateKey.FromHex(hex);
+            OnEventChanged();
+        }
+        catch (Exception e)
+        {
+            _privateKey = null;
+            Console.WriteLine($"Failed to parse private key, error: {e.Message}");
+        }
+    }
+
+    private string? TryGetHex(string? key, out string? hrp)
+    {
+        try
+        {
+            return NostrConverter.ToHex(key,  out hrp);
+        }
+        catch (Exception )
+        {
+            // ignore
+            hrp = null;
+            return null;
+        }
+    }
+}

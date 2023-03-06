@@ -10,6 +10,7 @@
         EventDeletion = 5,
         Reserved = 6,
         Reaction = 7,
+        BadgeAward = 8,
 
         // nip-28 public chat
         ChannelCreation = 40,
@@ -27,7 +28,14 @@
 
         RelayListMetadata = 10002,
         ClientAuthentication = 22242,
-        LongFormContent = 30023
+        NostrConnect = 24133,
+
+        ProfileBadges = 30008,
+        BadgeDefinition = 30009,
+
+        LongFormContent = 30023,
+
+        ApplicationSpecificData = 30078
 
         // nip-16 regular events                   [ 1000- 9999]
         // nip-16 replaceable events               [10000-19999]

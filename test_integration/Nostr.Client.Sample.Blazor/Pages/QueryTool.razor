@@ -25,34 +25,8 @@
                     <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
                     <strong>Subscription</strong>
                 </FluentTextField>
-
-                <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="0">
-                    <strong>Kinds</strong>
-                    
-                    <FluentButton Appearance="Appearance.Neutral" @onclick="OnDisplayKinds">
-                        <span>@_selectedKindsText</span>
-                        @if (_displayKindSelector)
-                        {
-                            <FluentIcon Name="@FluentIcons.ArrowUp" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral"/>
-                        }
-                        else
-                        {
-                            <FluentIcon Name="@FluentIcons.ArrowDown" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral"/>
-                        }
-                    </FluentButton>
-
-
-                    @if (_displayKindSelector)
-                    {
-                        <FluentSelect TOption="NostrKind"
-                                      Items="@_allKinds"
-                                      Multiple="true"
-                                      OptionValue="@(p => p.ToString())"
-                                      OptionText="@(p => $"{p.ToString()} [{(int)p}]")"
-                                      @bind-SelectedOptions="_selectedKinds">
-                        </FluentSelect>
-                    }
-                </Stack>
+                
+                <NostrKindSelect @bind-Value="_filter.Kinds"></NostrKindSelect>
 
                 <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
                     
@@ -207,23 +181,19 @@
 
     private string _subscription = "timeline:something";
 
-    private readonly NostrKind[] _allKinds = Enum.GetValues(typeof(NostrKind)).Cast<NostrKind>().ToArray();
-    private bool _displayKindSelector;
-    private IEnumerable<NostrKind>? _selectedKinds =  new[]
-    {
-        NostrKind.Metadata,
-        NostrKind.ShortTextNote,
-        NostrKind.Reaction,
-        NostrKind.Contacts,
-        NostrKind.RecommendRelay,
-        NostrKind.EventDeletion,
-        NostrKind.Reporting,
-        NostrKind.ClientAuthentication
-    };
-    private string _selectedKindsText = string.Empty;
-
     private readonly NostrFilter _filter = new()
     {
+        Kinds = new []
+        {
+            NostrKind.Metadata,
+            NostrKind.ShortTextNote,
+            NostrKind.Reaction,
+            NostrKind.Contacts,
+            NostrKind.RecommendRelay,
+            NostrKind.EventDeletion,
+            NostrKind.Reporting,
+            NostrKind.ClientAuthentication
+        },
         Since = DateTime.Now.AddHours(-12),
         Until = DateTime.Now.AddHours(4),
         Authors = new []
@@ -263,6 +233,7 @@
 
     public void Dispose()
     {
+        _websocketDisconnection?.Dispose();
         _websocketHandlerEvents?.Dispose();
         _websocketHandlerEoes?.Dispose();
     }
@@ -281,7 +252,6 @@
 
         // push default authors into input element
         _authorsText = string.Join(Environment.NewLine, _filter.Authors ?? Array.Empty<string>());
-        TransformSelectedKinds();
 
         base.OnInitialized();
     }
@@ -325,7 +295,6 @@
 
     private void OnSend()
     {
-        _filter.Kinds = _selectedKinds?.ToArray();
         _filter.Authors = ConvertTextIds(_authorsText);
         _filter.Ids = ConvertTextIds(_idsText);
         _filter.E = ConvertTextIds(_eIdsText);
@@ -340,25 +309,6 @@
     {
         NostrRelay.Client.Send(new NostrCloseRequest(sub));
         _subscriptions[sub] = false;
-    }
-
-    private void OnBackgroundClick()
-    {
-        _displayKindSelector = false;
-        TransformSelectedKinds();
-    }
-
-    private void OnDisplayKinds()
-    {
-        _displayKindSelector = !_displayKindSelector;
-        TransformSelectedKinds();
-    }
-
-    private void TransformSelectedKinds()
-    {
-        _selectedKindsText = _selectedKinds == null ? 
-            string.Empty : 
-            string.Join(", ", _selectedKinds.Cast<int>().OrderBy(x => x));
     }
 
     private void SetSince(ChangeEventArgs args)
