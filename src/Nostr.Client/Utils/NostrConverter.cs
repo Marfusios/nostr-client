@@ -16,6 +16,28 @@
             return hex;
         }
 
+        /// <summary>
+        /// Try to convert Bech32 string into hex key
+        /// </summary>
+        public static bool TryToHex(string? bech32, out string? hex, out string? hrp)
+        {
+            hrp = null;
+            hex = null;
+            try
+            {
+                hex = ToHex(bech32, out hrp);
+                return !string.IsNullOrWhiteSpace(hex);
+            }
+            catch (Exception)
+            {
+                // ignore
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Convert hex string to Bech32 format, you need to provide hrp (prefix)
+        /// </summary>
         public static string? ToBech32(string? hexKey, string hrp)
         {
             if (string.IsNullOrWhiteSpace(hexKey))
@@ -24,6 +46,24 @@
             var hexArray = HexExtensions.ToByteArray(hexKey);
             var npub = Bech32.Encode(hrp, hexArray);
             return npub;
+        }
+
+        /// <summary>
+        /// Try to convert hex string to Bech32 format, you need to provide hrp (prefix)
+        /// </summary>
+        public static bool TryToBech32(string? hexKey, string hrp, out string? bech32)
+        {
+            bech32 = null;
+            try
+            {
+                bech32 = ToBech32(bech32, hrp);
+                return !string.IsNullOrWhiteSpace(bech32);
+            }
+            catch (Exception)
+            {
+                // ignore
+                return false;
+            }
         }
 
         /// <summary>
@@ -41,7 +81,7 @@
         {
             return ToBech32(hexKey, "nsec");
         }
-        
+
         /// <summary>
         /// Convert hex key into Bech32 'note1xxx' representation
         /// </summary>

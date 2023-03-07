@@ -4,10 +4,6 @@
 @using Nostr.Client.Messages
 @using Nostr.Client.Utils
 @using System.Reactive.Linq
-@using Newtonsoft.Json
-@using Newtonsoft.Json.Linq
-@using Nostr.Client.Responses.Contacts
-@using Nostr.Client.Responses.Metadata
 @using Websocket.Client
 @inject RelayConnection NostrRelay
 @implements IDisposable
@@ -131,41 +127,9 @@
                     <FluentNumberField Min="0" ValueExpression="() => _pagination.ItemsPerPage" Value="@_pagination.ItemsPerPage" @onchange="SetPagination" style="width: 80px">
                     </FluentNumberField>
                 </Stack>
-
-                <FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
-                    <div class="dialog-content">
-                        <PageHeader Title3="@_selectedEvent?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
-                        @if (_selectedEvent is NostrMetadataEvent or NostrContactEvent)
-                        {
-                            <pre>@FormatEventContent(_selectedEvent?.Content)</pre>
-                        }
-                        else
-                        {
-                            <p style="font-size: 18px">@FormatEventContent(_selectedEvent?.Content)</p>
-                        }
-                        
-                        <p>
-                            <strong>Created at</strong>
-                            <div>@_selectedEvent?.CreatedAt?.ToLocalTime().ToString("F")</div>
-                        </p>
-                        <p>
-                            <strong>Id</strong>
-                            @if (_selectedEvent?.Kind == NostrKind.ShortTextNote)
-                            {
-                                <div><a class="clear-link" href="https://snort.social/e/@FormatToNote(_selectedEvent?.Id)" target="_blank">@FormatToNote(_selectedEvent?.Id)</a></div>
-                            }
-                            else
-                            {
-                                <div>@_selectedEvent?.Id</div>
-                            }
-                        </p>
-                        <p>
-                            <strong>Author</strong>
-                            <div>@_selectedEvent?.Pubkey</div>
-                            <div><a class="clear-link" href="https://snort.social/p/@FormatToNpub(_selectedEvent?.Pubkey)" target="_blank">@FormatToNpub(_selectedEvent?.Pubkey)</a></div>
-                        </p>
-                    </div>
-                </FluentDialog>
+                
+                <NostrEventViewDialog @ref="_eventDialog"></NostrEventViewDialog>
+                
             </div>
 
         </div>
@@ -175,9 +139,8 @@
 </Stack>
 
 @code {
-    private bool _isWaitingForData = false;
-    private FluentDialog? _eventDialog;
-    private NostrEvent? _selectedEvent;
+    private bool _isWaitingForData;
+    private NostrEventViewDialog? _eventDialog;
 
     private string _subscription = "timeline:something";
 
@@ -215,16 +178,9 @@
     private IQueryable<NostrEvent> _events = Array.Empty<NostrEvent>().AsQueryable();
     private readonly PaginationState _pagination = new() { ItemsPerPage = 15 };
 
-    private readonly int[] _paginationOptions = {
-        15,
-        25,
-        50,
-        100
-    };
-    
     private readonly Dictionary<string, bool> _subscriptions = new();
 
-    private GridSort<NostrEvent> _sortByDate = GridSort<NostrEvent>
+    private readonly GridSort<NostrEvent> _sortByDate = GridSort<NostrEvent>
         .ByAscending(p => p.CreatedAt);
 
     private IDisposable? _websocketDisconnection;
@@ -254,12 +210,6 @@
         _authorsText = string.Join(Environment.NewLine, _filter.Authors ?? Array.Empty<string>());
 
         base.OnInitialized();
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender)
-            _eventDialog!.Hide();
     }
 
     private void HandleDisconnection(DisconnectionInfo info)
@@ -383,16 +333,7 @@
 
     private void OnDisplayEvent(NostrEvent ev)
     {
-        _selectedEvent = ev;
-        _eventDialog?.Show();
-    }
-
-    private void OnHideEvent(DialogEventArgs? args)
-    {
-        if (args?.Reason != null && args.Reason == "dismiss")
-        {
-            _eventDialog!.Hide();
-        }
+        _eventDialog?.ShowEvent(ev);
     }
 
     private void OnClearEvents()
@@ -400,35 +341,4 @@
         _receivedEvents.Clear();
         _events = _receivedEvents.AsQueryable();
     }
-
-    private static string FormatEventContent(string? content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-            return string.Empty;
-
-        try
-        {
-            var parsed = JsonConvert.DeserializeObject<JObject>(content);
-            return parsed?.ToString(Formatting.Indented) ?? content;
-        }
-        catch (Exception)
-        {
-            return content;
-        }
-    }
-
-    private static string? FormatToNpub(string? hexKey) => FormatToBech32(hexKey, "npub");
-    private static string? FormatToNote(string? hexKey) => FormatToBech32(hexKey, "note");
-
-    private static string? FormatToBech32(string? hexKey, string hrp)
-    {
-        try
-        {
-            return NostrConverter.ToBech32(hexKey, hrp);
-        }
-        catch (Exception)
-        {
-            return string.Empty;
-        }
-    } 
 }

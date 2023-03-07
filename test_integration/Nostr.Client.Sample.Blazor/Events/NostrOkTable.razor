@@ -1,0 +1,128 @@
+﻿@using Nostr.Client.Responses
+@inject RelayConnection NostrRelay
+@inject EventStorage EventStorage;
+@implements IDisposable
+
+<div>
+
+    <FluentDataGrid RowsData="@_receivedData.AsQueryable()" Pagination="@_pagination" GridTemplateColumns="0.3fr 0.3fr 0.2fr 1fr">
+        <TemplateColumn Title="Received" Sortable="true" SortBy="@_sortByDate" IsDefaultSort="SortDirection.Ascending">
+            <span>@context.ReceivedTimestamp.ToLocalTime().ToString("T")</span>
+        </TemplateColumn>
+        <TemplateColumn Title="Event" Sortable="true">
+            @if (context.EventId != null)
+            {
+                <a class="local-link" @onclick="() => OnDisplayEvent(context.EventId)">@context.EventId[..4]-@context.EventId[^4..]</a>
+            }
+        </TemplateColumn>
+        <TemplateColumn Title="Accepted" Sortable="true">
+            @if (context.Accepted != null)
+            {
+                <span>@(context.Accepted.Value ? "✅" : "❌")</span>
+            }
+            else
+            {
+                <span>⚠️</span>
+            }
+        </TemplateColumn>
+        <PropertyColumn Title="Message" Property="@(p => p.Message)" Sortable="true" />
+    </FluentDataGrid>
+    <FluentPaginator Value="@_pagination" />
+
+    <Stack Orientation="Orientation.Horizontal" HorizontalGap="10" HorizontalAlignment="StackHorizontalAlignment.Right" VerticalAlignment="StackVerticalAlignment.Center">
+        <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearData">
+            Clear
+            <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
+        </FluentButton>
+
+        <span>Page size</span>
+        <FluentNumberField Min="0" ValueExpression="() => _pagination.ItemsPerPage" Value="@_pagination.ItemsPerPage" @onchange="SetPagination" style="width: 80px">
+        </FluentNumberField>
+    </Stack>
+    
+    <NostrEventViewDialog @ref="_eventDialog"></NostrEventViewDialog>
+
+</div>
+
+@code {
+    private readonly HashSet<ItemModel> _receivedData = new();
+    private readonly PaginationState _pagination = new() { ItemsPerPage = 15 };
+    private NostrEventViewDialog? _eventDialog;
+
+    private readonly GridSort<ItemModel> _sortByDate = GridSort<ItemModel>
+        .ByDescending(p => p.ReceivedTimestamp);
+
+    private IDisposable? _websocketHandlerOkData;
+    private IDisposable? _websocketHandlerNoticeData;
+
+    public void Dispose()
+    {
+        _websocketHandlerOkData?.Dispose();
+        _websocketHandlerNoticeData?.Dispose();
+    }
+
+    protected override void OnInitialized()
+    {
+        _websocketHandlerOkData = NostrRelay.Client.Streams.OkStream
+            .Subscribe(HandleOk);
+        _websocketHandlerNoticeData = NostrRelay.Client.Streams.NoticeStream
+            .Subscribe(HandleNotice);
+
+        base.OnInitialized();
+    }
+
+    private void HandleOk(NostrOkResponse response)
+    {
+        var converted = new ItemModel(
+            response.ReceivedTimestamp,
+            response.EventId,
+            response.Accepted,
+            response.Message
+            );
+
+        _receivedData.Add(converted);
+        StateHasChanged();
+    }
+
+    private void HandleNotice(NostrNoticeResponse response)
+    {
+        var converted = new ItemModel(
+            response.ReceivedTimestamp,
+            null,
+            null,
+            response.Message
+            );
+
+        _receivedData.Add(converted);
+        StateHasChanged();
+    }
+
+    private void OnClearData()
+    {
+        _receivedData.Clear();
+    }
+
+    private void SetPagination(ChangeEventArgs args)
+    {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            return;
+        }
+        _pagination.ItemsPerPage = Convert.ToInt32(args.Value);
+    }
+
+    private void OnDisplayEvent(string? eventId)
+    {
+        if (string.IsNullOrWhiteSpace(eventId))
+            return;
+
+        var found = EventStorage.FindEvent(eventId);
+        if (found == null)
+            return;
+
+        _eventDialog?.ShowEvent(found);
+    }
+
+    private record ItemModel(DateTime ReceivedTimestamp, string? EventId, bool? Accepted, string? Message);
+
+}

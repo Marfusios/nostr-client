@@ -117,6 +117,9 @@ namespace Nostr.Client.Client
                 case NostrMessageTypes.Notice:
                     Streams.NoticeSubject.OnNext(Deserialize<NostrNoticeResponse>(formatted));
                     return;
+                case NostrMessageTypes.Ok:
+                    Streams.OkSubject.OnNext(Deserialize<NostrOkResponse>(formatted));
+                    return;
                 default:
                     Streams.UnknownMessageSubject.OnNext(Deserialize<NostrResponse>(formatted));
                     return;
@@ -139,7 +142,7 @@ namespace Nostr.Client.Client
 
         private NostrRawResponse Raw(ResponseMessage message)
         {
-            return new NostrRawResponse()
+            return new NostrRawResponse
             {
                 Message = message,
                 CommunicatorName = Communicator.Name

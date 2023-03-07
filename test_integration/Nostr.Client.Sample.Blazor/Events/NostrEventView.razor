@@ -1,0 +1,119 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Linq
+
+<div>
+    <PageHeader Title3="@Event?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
+    @if (Event is NostrMetadataEvent or NostrContactEvent)
+    {
+        <pre>@FormatEventContent(Event?.Content)</pre>
+    }
+    else
+    {
+        <p style="font-size: 18px">@FormatEventContent(Event?.Content)</p>
+    }
+       
+    @if (Event?.Tags?.Any() == true)
+    {
+        <p>
+            <strong>Tags</strong>
+            <FluentTreeView>
+                
+                @foreach (var tag in Event.Tags.GroupBy(x => x.TagIdentifier))
+                {
+                    <FluentTreeItem Text="@tag.Key">
+                            
+                        @foreach (var otherTag in tag.SelectMany(x => x.AdditionalData))
+                        {
+                            <FluentTreeItem>
+                                @switch (tag.Key)
+                                {
+                                    case "e":
+                                        <div><a class="clear-link" href="https://snort.social/e/@FormatTag(tag.Key,otherTag)" target="_blank">@FormatTag(tag.Key,otherTag)</a></div>
+                                        break;
+                                    case "p":
+                                        <div><a class="clear-link" href="https://snort.social/p/@FormatTag(tag.Key,otherTag)" target="_blank">@FormatTag(tag.Key,otherTag)</a></div>
+                                        break;
+                                    default:
+                                        <div><span>@FormatTag(tag.Key,otherTag)</span></div>
+                                        break;
+                                }
+                            </FluentTreeItem>
+                        }
+
+                    </FluentTreeItem>
+                }
+                    
+            </FluentTreeView>
+        </p>
+    }
+
+    <p>
+        <strong>Created at</strong>
+        <div>@Event?.CreatedAt?.ToLocalTime().ToString("F")</div>
+    </p>
+    <p>
+        <strong>Id</strong>
+        @if (Event?.Kind == NostrKind.ShortTextNote)
+        {
+            <div><a class="clear-link" href="https://snort.social/e/@FormatToNote(Event?.Id)" target="_blank">@FormatToNote(Event?.Id)</a></div>
+        }
+        else
+        {
+            <div>@Event?.Id</div>
+        }
+    </p>
+    <p>
+        <strong>Author</strong>
+        <div>@Event?.Pubkey</div>
+        <div><a class="clear-link" href="https://snort.social/p/@FormatToNpub(Event?.Pubkey)" target="_blank">@FormatToNpub(Event?.Pubkey)</a></div>
+    </p>
+
+</div>
+
+@code {
+    [Parameter]
+    [Required]
+    public NostrEvent? Event { get; set; } = new();
+
+    private static string FormatEventContent(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        try
+        {
+            var parsed = JsonConvert.DeserializeObject<JObject>(content);
+            return parsed?.ToString(Formatting.Indented) ?? content;
+        }
+        catch (Exception)
+        {
+            return content;
+        }
+    }
+
+    private static string? FormatToNpub(string? hexKey) => FormatToBech32(hexKey, "npub");
+    private static string? FormatToNote(string? hexKey) => FormatToBech32(hexKey, "note");
+
+    private static string? FormatToBech32(string? hexKey, string hrp)
+    {
+        try
+        {
+            return NostrConverter.ToBech32(hexKey, hrp);
+        }
+        catch (Exception)
+        {
+            return hexKey;
+        }
+    }
+
+    private string? FormatTag(string tagKey, object? tagValue)
+    {
+        var safeValue = tagValue?.ToString() ?? string.Empty;
+        return tagKey switch {
+            "e" => FormatToNote(safeValue),
+            "p" => FormatToNpub(safeValue),
+            _ => safeValue
+            };
+    }
+}

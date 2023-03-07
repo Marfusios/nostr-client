@@ -1,9 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Nostr.Client.Messages;
-using Nostr.Client.Responses;
-using Nostr.Client.Responses.Contacts;
-using Nostr.Client.Responses.Metadata;
+using Nostr.Client.Messages.Contacts;
+using Nostr.Client.Messages.Metadata;
 
 namespace Nostr.Client.Json
 {

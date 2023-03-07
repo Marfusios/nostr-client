@@ -1,0 +1,36 @@
+﻿@using System.ComponentModel.DataAnnotations
+
+<FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
+    <div class="dialog-content">
+        <NostrEventView Event="@Event"></NostrEventView>
+    </div>
+</FluentDialog>
+
+@code {
+    private FluentDialog? _eventDialog;
+
+    [Parameter]
+    public NostrEvent? Event { get; set; } = new();
+
+    public void ShowEvent(NostrEvent? ev)
+    {
+        Event = ev;
+        if (Event == null)
+            return;
+        _eventDialog?.Show();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            _eventDialog!.Hide();
+    }
+
+    private void OnHideEvent(DialogEventArgs? args)
+    {
+        if (args?.Reason != null && args.Reason == "dismiss")
+        {
+            _eventDialog!.Hide();
+        }
+    }
+}

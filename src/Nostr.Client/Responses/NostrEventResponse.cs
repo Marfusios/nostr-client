@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Newtonsoft.Json;
 using Nostr.Client.Json;
+using Nostr.Client.Messages;
 
 namespace Nostr.Client.Responses
 {

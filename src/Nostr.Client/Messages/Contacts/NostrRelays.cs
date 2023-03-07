@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 
-namespace Nostr.Client.Responses.Contacts
+namespace Nostr.Client.Messages.Contacts
 {
     [DebuggerDisplay("Relays {Count}")]
     public class NostrRelays : ReadOnlyDictionary<string, NostrRelayConfig>

@@ -2,7 +2,7 @@
 using Nostr.Client.Json;
 using System.Diagnostics;
 
-namespace Nostr.Client.Responses
+namespace Nostr.Client.Messages
 {
     [DebuggerDisplay("Tag {TagIdentifier} additional: {AdditionalData.Length}")]
     [JsonConverter(typeof(ArrayConverter))]
@@ -19,7 +19,7 @@ namespace Nostr.Client.Responses
         }
 
         [ArrayProperty(0)]
-        public string? TagIdentifier { get; init; }
+        public string? TagIdentifier { get; set; }
 
         /// <summary>
         /// Additional unexpected data at higher indexes in the tags array

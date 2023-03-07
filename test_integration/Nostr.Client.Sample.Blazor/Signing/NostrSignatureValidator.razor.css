@@ -1,0 +1,17 @@
+﻿.signature {
+    width: 100%;
+}
+
+.sig-valid {
+    padding: 10px;
+    border: dotted 2px var(--success);
+    border-radius: 10px;
+    color: var(--success);
+}
+
+.sig-invalid {
+    padding: 10px;
+    border: dotted 2px var(--error);
+    border-radius: 10px;
+    color: var(--error);
+}

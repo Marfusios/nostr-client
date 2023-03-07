@@ -9,6 +9,7 @@ namespace Nostr.Client.Client
         internal readonly Subject<NostrEventResponse> EventSubject = new();
         internal readonly Subject<NostrNoticeResponse> NoticeSubject = new();
         internal readonly Subject<NostrEoseResponse> EoseSubject = new();
+        internal readonly Subject<NostrOkResponse> OkSubject = new();
 
         internal readonly Subject<NostrResponse> UnknownMessageSubject = new();
         internal readonly Subject<NostrRawResponse> UnknownRawSubject = new();
@@ -27,6 +28,11 @@ namespace Nostr.Client.Client
         /// Information that all stored events have been sent out
         /// </summary>
         public IObservable<NostrEoseResponse> EoseStream => EoseSubject.AsObservable();
+
+        /// <summary>
+        /// Information if the sent event was accepted or rejected
+        /// </summary>
+        public IObservable<NostrOkResponse> OkStream => OkSubject.AsObservable();
 
         /// <summary>
         /// Unknown and unhandled messages

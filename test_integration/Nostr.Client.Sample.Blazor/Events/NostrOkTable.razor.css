@@ -1,0 +1,6 @@
+﻿.local-link {
+    cursor: pointer;
+    color: var(--neutral-foreground-rest);
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+}

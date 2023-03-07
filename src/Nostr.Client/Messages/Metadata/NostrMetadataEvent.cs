@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nostr.Client.Json;
 
-namespace Nostr.Client.Responses.Metadata
+namespace Nostr.Client.Messages.Metadata
 {
     public class NostrMetadataEvent : NostrEvent
     {

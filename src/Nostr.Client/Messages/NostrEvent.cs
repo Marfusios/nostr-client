@@ -2,10 +2,9 @@
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using Nostr.Client.Keys;
-using Nostr.Client.Messages;
 using Nostr.Client.Utils;
 
-namespace Nostr.Client.Responses
+namespace Nostr.Client.Messages
 {
     [DebuggerDisplay("{CreatedAt} {Kind.ToString()} {Pubkey}")]
     public class NostrEvent : IEquatable<NostrEvent>
@@ -119,7 +118,7 @@ namespace Nostr.Client.Responses
 
         public override int GetHashCode()
         {
-            return (Id != null ? Id.GetHashCode() : 0);
+            return Id != null ? Id.GetHashCode() : 0;
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nostr.Client.Json;
 
-namespace Nostr.Client.Responses.Contacts
+namespace Nostr.Client.Messages.Contacts
 {
     public class NostrContactEvent : NostrEvent
     {

@@ -2,9 +2,9 @@
 using Newtonsoft.Json;
 using Nostr.Client.Client;
 using Nostr.Client.Messages;
+using Nostr.Client.Messages.Contacts;
+using Nostr.Client.Messages.Metadata;
 using Nostr.Client.Requests;
-using Nostr.Client.Responses.Contacts;
-using Nostr.Client.Responses.Metadata;
 using Serilog;
 
 namespace Nostr.Client.Sample.Console
@@ -46,6 +46,7 @@ namespace Nostr.Client.Sample.Console
 
             _client.Streams.NoticeStream.Subscribe(x => Log.Information("[{relay}] Notice: {message}", x.CommunicatorName, x.Message));
             _client.Streams.EoseStream.Subscribe(x => Log.Information("[{relay}] EOSE of subscription {subscription}", x.CommunicatorName, x.Subscription));
+            _client.Streams.OkStream.Subscribe(x => Log.Information("[{relay}] OK {subscription} success: {success} {message}", x.CommunicatorName, x.EventId, x.Accepted, x.Message));
             _client.Streams.UnknownMessageStream.Subscribe(x => Log.Information("[{relay}] Unknown {messageType} message, data: {data}", x.CommunicatorName, x.MessageType, JsonConvert.SerializeObject(x.AdditionalData)));
             _client.Streams.UnknownRawStream.Subscribe(x => Log.Warning("[{relay}] Unknown data: {data}", x.CommunicatorName, x.Message?.ToString()));
         }

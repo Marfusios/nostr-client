@@ -21,5 +21,11 @@ namespace Nostr.Client.Responses
         /// </summary>
         [JsonIgnore]
         public string CommunicatorName { get; internal set; } = string.Empty;
+
+        /// <summary>
+        /// Client timestamp of the received response, UTC
+        /// </summary>
+        [JsonIgnore]
+        public DateTime ReceivedTimestamp { get; internal set; } = DateTime.UtcNow;
     }
 }

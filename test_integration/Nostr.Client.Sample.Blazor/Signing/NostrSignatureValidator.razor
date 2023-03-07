@@ -1,0 +1,95 @@
+﻿@using Nostr.Client.Utils
+@using Nostr.Client.Keys
+@using System.ComponentModel.DataAnnotations
+
+<div class="signature">
+
+    @if (_isSignatureValid == true)
+     {
+         <div class="sig-valid">
+             <Stack Orientation="Orientation.Horizontal" VerticalAlignment="StackVerticalAlignment.Center" HorizontalAlignment="StackHorizontalAlignment.Center">
+                 <FluentIcon Name="@FluentIcons.ShieldCheckmark" Slot="start" Size="@IconSize.Size20" Color="Color.Success"/>
+                 <strong>Signature is valid</strong>
+             </Stack>
+         </div>
+     }
+     else if (_isSignatureValid == false)
+     {
+         <div class="sig-invalid">
+             <Stack Orientation="Orientation.Horizontal" VerticalAlignment="StackVerticalAlignment.Center" HorizontalAlignment="StackHorizontalAlignment.Center">
+                 <FluentIcon Name="@FluentIcons.ShieldError" Slot="start" Size="@IconSize.Size20" Color="Color.Error"/>
+                 <strong>Signature is invalid</strong>
+             </Stack>
+         </div>
+     }
+ 
+</div>
+
+@code {
+    private bool? _isSignatureValid;
+    private string? _key;
+    private string? _data;
+    private string? _signature;
+
+    [Parameter]
+    [Required]
+    public string? PublicOrPrivateKey { get; set; }
+
+    [Parameter]
+    [Required]
+    public string? SignedData { get; set; }
+
+    [Parameter]
+    [Required]
+    public string? Signature { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        _key = UpdateIfModified(_key, PublicOrPrivateKey);
+        _data = UpdateIfModified(_data, SignedData);
+        _signature = UpdateIfModified(_signature, Signature);
+
+        base.OnParametersSet();
+    }
+
+    private string? UpdateIfModified(string? existing, string? newValue)
+    {
+        if (existing == newValue)
+            return existing;
+
+        ValidateSignature();
+        return newValue;
+    }
+
+    private void ValidateSignature()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(PublicOrPrivateKey) || string.IsNullOrWhiteSpace(SignedData) || string.IsNullOrWhiteSpace(Signature))
+            {
+                _isSignatureValid = null;
+                return;
+            }
+
+            NostrConverter.TryToHex(PublicOrPrivateKey, out var hex, out var hrp);
+            NostrPublicKey publicKey;
+
+            if (hex != null && hrp == "nsec")
+            {
+                var privateKey = NostrPrivateKey.FromHex(hex);
+                publicKey = privateKey.DerivePublicKey();
+            }
+            else
+            {
+                publicKey = NostrPublicKey.FromHex(hex ?? PublicOrPrivateKey);
+            }
+
+            _isSignatureValid = publicKey.IsHexSignatureValid(Signature, SignedData);
+        }
+        catch (Exception e)
+        {
+            _isSignatureValid = false;
+            Console.WriteLine($"Failed to validate signature, error: {e.Message}");
+        }
+    }
+}

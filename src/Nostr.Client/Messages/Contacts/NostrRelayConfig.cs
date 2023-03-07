@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using Newtonsoft.Json;
 
-namespace Nostr.Client.Responses.Contacts
+namespace Nostr.Client.Messages.Contacts
 {
     [DebuggerDisplay("Relay, read: {Read}, write: {Write}")]
     public class NostrRelayConfig

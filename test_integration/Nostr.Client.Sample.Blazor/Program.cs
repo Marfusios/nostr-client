@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Fast.Components.FluentUI;
 using Nostr.Client.Sample.Blazor.Relay;
+using Nostr.Client.Sample.Blazor.Events;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -13,5 +14,6 @@ LibraryConfiguration config = new(ConfigurationGenerator.GetIconConfiguration(),
 builder.Services.AddFluentUIComponents(config);
 
 builder.Services.AddSingleton<RelayConnection>();
+builder.Services.AddSingleton<EventStorage>();
 
 await builder.Build().RunAsync();

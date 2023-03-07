@@ -1,0 +1,81 @@
+﻿@using Nostr.Client.Requests
+@using Nostr.Client.Responses
+@using System.ComponentModel.DataAnnotations
+@using Nostr.Client.Messages
+@inject RelayConnection NostrRelay
+@inject EventStorage EventStorage;
+@implements IDisposable
+
+<Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
+
+    <NostrEventEdit Event="Event"></NostrEventEdit>
+
+    <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+        <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
+            Send
+            <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
+        </FluentButton>
+
+        @if (_isSending)
+        {
+            <FluentProgressRing></FluentProgressRing>
+        }
+    </Stack>
+
+</Stack>
+
+@code {
+    private bool _isSending;
+    private string? _sendingEventId;
+
+    private IDisposable? _websocketHandlerOkData;
+    private IDisposable? _websocketHandlerNoticeData;
+
+    [Parameter]
+    [Required]
+    public NostrEvent Event { get; set; } = new()
+    {
+        Kind = NostrKind.ShortTextNote,
+        CreatedAt = DateTime.Now
+    };
+
+    public void Dispose()
+    {
+        _websocketHandlerOkData?.Dispose();
+        _websocketHandlerNoticeData?.Dispose();
+    }
+
+    protected override void OnInitialized()
+    {
+        _websocketHandlerOkData = NostrRelay.Client.Streams.OkStream
+            .Subscribe(HandleOk);
+        _websocketHandlerNoticeData = NostrRelay.Client.Streams.NoticeStream
+            .Subscribe(HandleNotice);
+
+        base.OnInitialized();
+    }
+
+    private void HandleOk(NostrOkResponse response)
+    {
+        if (response.EventId == _sendingEventId)
+        {
+            _isSending = false;
+        }
+        StateHasChanged();
+    }
+
+    private void HandleNotice(NostrNoticeResponse response)
+    {
+        // notice is not bound to any specific event, stop progress
+        _isSending = false;
+        StateHasChanged();
+    }
+
+    private void OnSend()
+    {
+        _isSending = true;
+        _sendingEventId = Event.Id;
+        EventStorage.Store(Event);
+        NostrRelay.Client.Send(new NostrEventRequest(Event));
+    }
+}

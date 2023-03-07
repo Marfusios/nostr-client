@@ -4,7 +4,6 @@
 @using Nostr.Client.Messages
 @using Nostr.Client.Requests
 @using Nostr.Client.Utils
-@inject RelayConnection NostrRelay
 
 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
     
@@ -14,7 +13,7 @@
         <strong>Created at</strong>
         <Stack Orientation="Orientation.Horizontal">
             <InputDateTime @bind-Value="Event.CreatedAt" @bind-Value:after="OnEventChanged"></InputDateTime>
-            <FluentButton Appearance="Appearance.Neutral" @onclick="@(() => Event.CreatedAt = DateTime.Now)" style="height: auto">
+            <FluentButton Appearance="Appearance.Neutral" @onclick="OnNow" title="Select the current date and time" style="height: auto">
                 now
             </FluentButton>
         </Stack>
@@ -24,9 +23,55 @@
         <strong>Content</strong>
     </FluentTextArea>
     
+    <Stack Orientation="Orientation.Vertical" VerticalGap="5">
+        
+        <Stack Orientation="Orientation.Horizontal" HorizontalGap="10">
+            <strong>Tags</strong>
+            <FluentButton Appearance="Appearance.Neutral" @onclick="OnAddTagGroup" title="Add a new tag group" style="height: auto">
+                +
+            </FluentButton>
+        </Stack>
+        
+        @if (_tags.Any())
+        {
+            <FluentTreeView>
+                
+                @foreach (var tag in _tags)
+                {
+                    <FluentTreeItem>
+                        <Stack Orientation="Orientation.Horizontal" HorizontalGap="5">
+                            <FluentTextField Placeholder="tag identifier" @bind-Value="@tag.TagIdentifier" @bind-Value:after="OnEventChanged">
+                            </FluentTextField>
+                            <FluentButton Appearance="Appearance.Neutral" @onclick="() => OnAddTagValue(tag)" title="Add a new tag value" style="height: auto">
+                                +
+                            </FluentButton>
+                            <FluentButton Appearance="Appearance.Neutral" @onclick="() => OnRemoveTagGroup(tag)" title="Remove entire tag group" style="height: auto">
+                                -
+                            </FluentButton>
+                        </Stack>
+
+                        @foreach(var tagValue in _tagValues[tag])
+                        {
+                            <FluentTreeItem>
+                                <Stack Orientation="Orientation.Horizontal" HorizontalGap="5">
+                                    <FluentTextField Placeholder="tag value" @bind-Value="@tagValue.Value" @bind-Value:after="OnEventChanged">
+                                    </FluentTextField>
+                                    <FluentButton Appearance="Appearance.Neutral" @onclick="() => OnRemoveTagValue(tag, tagValue)" title="Remove tag value" style="height: auto">
+                                        -
+                                    </FluentButton>
+                                </Stack>
+                            </FluentTreeItem>
+                        }
+                    </FluentTreeItem>
+                }
+
+            </FluentTreeView>
+        }
+    </Stack>
+    
     <FluentTextField Style="width: 100%" Disabled="true" ValueExpression="() => Event.Id" Value="@Event.Id">
         <FluentIcon Name="@FluentIcons.Document" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
-        <strong>Id (sha256)</strong>
+        <strong>Id (SHA-256)</strong>
     </FluentTextField>
     
     <FluentDivider style="width: 100%"></FluentDivider>
@@ -45,50 +90,42 @@
         
         <span>or</span>
     
-        <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" @bind-Value="_privateKeyStr" @bind-Value:after="OnPrivateKeyChanged">
-            <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
-            <strong>Private key</strong>
-        </FluentTextField>
-        
+        <Stack Orientation="Orientation.Horizontal" HorizontalGap="10">
+            <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" @bind-Value="_privateKeyStr" @bind-Value:after="OnPrivateKeyChanged">
+                <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
+                <strong>Private key</strong>
+            </FluentTextField>
+            
+            <FluentButton Appearance="Appearance.Neutral" @onclick="OnGeneratePrivateKey" title="Generate a new private key" style="align-self: end">
+                <FluentIcon Name="@FluentIcons.SquareAdd" Size="@IconSize.Size16" Color="Color.Neutral" />
+            </FluentButton>
+        </Stack>
+
     </Stack>
     
-    <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
-        <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
-            Send
-            <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
-        </FluentButton>
-                    
-        @if (_isSending)
-        {
-            <FluentProgressRing></FluentProgressRing>
-        }
-    </Stack>
+    <NostrSignatureValidator PublicOrPrivateKey="@_privateOrPublicKey" SignedData="@Event.Id" Signature="@Event.Sig"></NostrSignatureValidator>
 
 </Stack>
 
-
 @code {
-    private bool _isSending;
+    private string? _privateOrPublicKey;
     private string? _privateKeyStr;
     private NostrPrivateKey? _privateKey;
 
+    private readonly List<NostrEventTag> _tags = new();
+    private readonly Dictionary<NostrEventTag, List<TagValue>> _tagValues = new();
+
     [Parameter]
     [Required]
-    public NostrEvent Event { get; set; } = new()
-    {
-        Kind = NostrKind.ShortTextNote,
-        CreatedAt = DateTime.Now
-    };
-
-    private void OnSend()
-    {
-        NostrRelay.Client.Send(new NostrEventRequest(Event));
-    }
+    public NostrEvent Event { get; set; } = new();
 
     private void OnEventChanged()
     {
         try
         {
+            UpdatePrivateOrPublicKey();
+            UpdateTags();
+
             if (_privateKey != null)
                 Event.Pubkey = _privateKey.DerivePublicKey().Hex;
 
@@ -122,34 +159,104 @@
     {
         try
         {
-            var hex = TryGetHex(_privateKeyStr, out var hrp);
-            if (hex == null || hrp != "nsec")
+            NostrConverter.TryToHex(_privateKeyStr, out var hex, out var hrp);
+            var hexSafe = hex ?? _privateKeyStr;
+            if (string.IsNullOrWhiteSpace(hexSafe) || (hex != null && hrp != "nsec"))
             {
                 _privateKey = null;
+                UpdatePrivateOrPublicKey();
                 return;
             }
 
-            _privateKey = NostrPrivateKey.FromHex(hex);
+            _privateKey = NostrPrivateKey.FromHex(hexSafe);
+
             OnEventChanged();
         }
         catch (Exception e)
         {
             _privateKey = null;
+            UpdatePrivateOrPublicKey();
             Console.WriteLine($"Failed to parse private key, error: {e.Message}");
         }
     }
 
-    private string? TryGetHex(string? key, out string? hrp)
+    private void OnGeneratePrivateKey()
     {
-        try
+        _privateKey = NostrPrivateKey.GenerateNew();
+        _privateKeyStr = _privateKey.Bech32;
+        OnEventChanged();
+    }
+
+    private void OnNow()
+    {
+        Event.CreatedAt = DateTime.Now;
+        OnEventChanged();
+    }
+
+    private void UpdatePrivateOrPublicKey()
+    {
+        if (string.IsNullOrWhiteSpace(_privateKeyStr))
         {
-            return NostrConverter.ToHex(key,  out hrp);
+            _privateOrPublicKey = Event.Pubkey;
+            return;
         }
-        catch (Exception )
+
+        _privateOrPublicKey = _privateKeyStr;
+    }
+
+    private void UpdateTags()
+    {
+        foreach (var tag in _tags)
         {
-            // ignore
-            hrp = null;
-            return null;
+            var values = _tagValues[tag];
+            tag.AdditionalData = values
+                .OrderBy(x => x.Order)
+                .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                .Select(x => x.Value!)
+                .ToArray();
         }
+        Event.Tags = _tags
+            .Where(x => !string.IsNullOrWhiteSpace(x.TagIdentifier))
+            .ToArray();
+    }
+
+    private void OnAddTagGroup()
+    {
+        NostrEventTag tag;
+        if (!_tags.Any())
+            tag = new NostrEventTag("e");
+        else if (_tags.Count == 1)
+            tag = new NostrEventTag("p");
+        else
+            tag = new NostrEventTag(null);
+
+        _tags.Add(tag);
+        _tagValues[tag] = new List<TagValue>();
+        OnEventChanged();
+    }
+
+    private void OnRemoveTagGroup(NostrEventTag tag)
+    {
+        _tags.Remove(tag);
+        _tagValues.Remove(tag);
+        OnEventChanged();
+    }
+
+    private void OnAddTagValue(NostrEventTag tag)
+    {
+        var values = _tagValues[tag];
+        values.Add(new TagValue(values.Count + 1));
+        OnEventChanged();
+    }
+
+    private void OnRemoveTagValue(NostrEventTag tag, TagValue tagValue)
+    {
+        _tagValues[tag].Remove(tagValue);
+        OnEventChanged();
+    }
+
+    private record TagValue(int Order)
+    {
+        public string? Value { get; set; }
     }
 }

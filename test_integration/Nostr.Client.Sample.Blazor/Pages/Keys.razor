@@ -81,25 +81,8 @@
             <strong>Signature</strong>
         </FluentTextField>
         
-        @if (_isSignatureValid == true)
-        {
-            <div class="sig-valid">
-                <Stack Orientation="Orientation.Horizontal" VerticalAlignment="StackVerticalAlignment.Center" HorizontalAlignment="StackHorizontalAlignment.Center">
-                    <FluentIcon Name="@FluentIcons.ShieldCheckmark" Slot="start" Size="@IconSize.Size20" Color="Color.Success"/>
-                    <strong>Signature is valid</strong>
-                </Stack>
-            </div>
-        }
-        else if (_isSignatureValid == false)
-        {
-            <div class="sig-invalid">
-                <Stack Orientation="Orientation.Horizontal" VerticalAlignment="StackVerticalAlignment.Center" HorizontalAlignment="StackHorizontalAlignment.Center">
-                    <FluentIcon Name="@FluentIcons.ShieldError" Slot="start" Size="@IconSize.Size20" Color="Color.Error"/>
-                    <strong>Signature is invalid</strong>
-                </Stack>
-            </div>
-        }
-        
+        <NostrSignatureValidator PublicOrPrivateKey="@_publicOrPrivateKeyForSignature" SignedData="@_dataForSignature" Signature="@_signature"></NostrSignatureValidator>
+
     </div>
 
 </Stack>
@@ -115,8 +98,6 @@
     string? _dataForSignature;
     string? _signature;
 
-    bool? _isSignatureValid;
-
     private void OnGenerate()
     {
         _generatedKeyPair = NostrKeyPair.GenerateNew();
@@ -127,33 +108,20 @@
         try
         {
             _privateKey = (string?)args.Value;
-            var hex = TryGetHex(_privateKey, out _) ?? _privateKey;
-            if (string.IsNullOrWhiteSpace(hex))
+            NostrConverter.TryToHex(_privateKey, out var hex, out var hrp);
+            var hexSafe = hex ?? _privateKey;
+            if (string.IsNullOrWhiteSpace(hexSafe))
             {
                 _derivedKeyPair = null;
                 return;
             }
 
-            _derivedKeyPair = NostrKeyPair.From(NostrPrivateKey.FromHex(hex));
+            _derivedKeyPair = NostrKeyPair.From(NostrPrivateKey.FromHex(hexSafe));
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to parse private key, error: {e.Message}");
             _derivedKeyPair = null;
-        }
-    }
-
-    private string? TryGetHex(string? key, out string? hrp)
-    {
-        try
-        {
-            return NostrConverter.ToHex(key,  out hrp);
-        }
-        catch (Exception )
-        {
-            // ignore
-            hrp = null;
-            return null;
         }
     }
 
@@ -163,11 +131,9 @@
         {
             _publicOrPrivateKeyForSignature = (string?)args.Value;
             ComputeSignature();
-            ValidateSignature();
         }
         catch (Exception e)
         {
-            _isSignatureValid = null;
             Console.WriteLine($"Failed to parse private key, error: {e.Message}");
         }
     }
@@ -178,11 +144,9 @@
         {
             _dataForSignature = (string?)args.Value;
             ComputeSignature();
-            ValidateSignature();
         }
         catch (Exception e)
         {
-            _isSignatureValid = null;
             Console.WriteLine($"Failed to parse data hex, error: {e.Message}");
         }
     }
@@ -192,11 +156,9 @@
         try
         {
             _signature = (string?)args.Value;
-            ValidateSignature();
         }
         catch (Exception e)
         {
-            _isSignatureValid = null;
             Console.WriteLine($"Failed to parse signature hex, error: {e.Message}");
         }
     }
@@ -211,7 +173,7 @@
             if (!string.IsNullOrWhiteSpace(_signature))
                 return;
 
-            var hex = TryGetHex(_publicOrPrivateKeyForSignature, out var hrp);
+            NostrConverter.TryToHex(_publicOrPrivateKeyForSignature, out var hex, out var hrp);
             if (hex == null || hrp != "nsec")
                 return;
 
@@ -221,38 +183,6 @@
         catch (Exception e)
         {
             Console.WriteLine($"Failed to compute signature, error: {e.Message}");
-        }
-    }
-
-    private void ValidateSignature()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(_publicOrPrivateKeyForSignature) || string.IsNullOrWhiteSpace(_dataForSignature) || string.IsNullOrWhiteSpace(_signature))
-            {
-                _isSignatureValid = null;
-                return;
-            }
-
-            var hex = TryGetHex(_publicOrPrivateKeyForSignature, out var hrp);
-            NostrPublicKey publicKey;
-
-            if (hex != null && hrp == "nsec")
-            {
-                var privateKey = NostrPrivateKey.FromHex(hex);
-                publicKey = privateKey.DerivePublicKey();
-            }
-            else
-            {
-                publicKey = NostrPublicKey.FromHex(hex ?? _publicOrPrivateKeyForSignature);
-            }
-
-            _isSignatureValid = publicKey.IsHexSignatureValid(_signature, _dataForSignature);
-        }
-        catch (Exception e)
-        {
-            _isSignatureValid = null;
-            Console.WriteLine($"Failed to validate signature, error: {e.Message}");
         }
     }
 }

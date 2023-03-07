@@ -104,7 +104,7 @@ More usage examples:
 - [ ] NIP-14: Subject tag in text events
 - [x] NIP-15: End of Stored Events Notice
 - [x] NIP-19: bech32-encoded entities
-- [ ] NIP-20: Command Results
+- [x] NIP-20: Command Results
 - [ ] NIP-21: `nostr:` Protocol handler (`web+nostr`)
 - [ ] NIP-25: Reactions
 - [ ] NIP-26: Delegated Event Signing (Display delegated signings only)

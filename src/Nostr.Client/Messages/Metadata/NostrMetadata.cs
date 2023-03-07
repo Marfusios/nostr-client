@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Nostr.Client.Responses.Metadata
+namespace Nostr.Client.Messages.Metadata
 {
     public class NostrMetadata
     {
