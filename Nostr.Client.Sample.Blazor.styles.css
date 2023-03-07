@@ -121,6 +121,13 @@
 }
 /* /Events/NostrEventEdit.razor.rz.scp.css */
 
+/* /Events/NostrOkTable.razor.rz.scp.css */
+.local-link[b-nfrib90g62] {
+    cursor: pointer;
+    color: var(--neutral-foreground-rest);
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+}
 /* /Pages/Converter.razor.rz.scp.css */
 .conversion-group[b-m70lnbtcfw] {
     padding-left: 20px;
@@ -165,20 +172,6 @@ fluent-card[b-n7e16r3r7k] {
 .keys[b-s2jod6oxhn] {
     list-style-type: none;
 }
-
-.sig-valid[b-s2jod6oxhn] {
-    padding: 10px;
-    border: dotted 2px var(--success);
-    border-radius: 10px;
-    color: var(--success);
-}
-
-.sig-invalid[b-s2jod6oxhn] {
-    padding: 10px;
-    border: dotted 2px var(--error);
-    border-radius: 10px;
-    color: var(--error);
-}
 /* /Pages/Publisher.razor.rz.scp.css */
 .page-layout[b-w8q60iq6qy] {
     width: 100%;
@@ -200,4 +193,22 @@ fluent-card[b-n7e16r3r7k] {
 /* /Pages/Relay.razor.rz.scp.css */
 .operation-button[b-7yeq4ntgro] {
     align-self: end;
+}
+/* /Signing/NostrSignatureValidator.razor.rz.scp.css */
+.signature[b-g80od27w9u] {
+    width: 100%;
+}
+
+.sig-valid[b-g80od27w9u] {
+    padding: 10px;
+    border: dotted 2px var(--success);
+    border-radius: 10px;
+    color: var(--success);
+}
+
+.sig-invalid[b-g80od27w9u] {
+    padding: 10px;
+    border: dotted 2px var(--error);
+    border-radius: 10px;
+    color: var(--error);
 }
