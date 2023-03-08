@@ -23,6 +23,11 @@ public enum StackHorizontalAlignment
     /// The content is aligned to the right.
     /// </summary>
     Right,
+
+    /// <summary>
+    /// The content is aligned to the edges
+    /// </summary>
+    SpaceBetween,
 }
 
 /// <summary>
@@ -44,6 +49,11 @@ public enum StackVerticalAlignment
     /// The content is aligned to the bottom
     /// </summary>
     Bottom,
+
+    /// <summary>
+    /// The content is aligned to the edges
+    /// </summary>
+    SpaceBetween,
 }
 
 public partial class Stack : FluentComponentBase
@@ -123,6 +133,7 @@ public partial class Stack : FluentComponentBase
             StackHorizontalAlignment.Left => "start",
             StackHorizontalAlignment.Center => "center",
             StackHorizontalAlignment.Right => "end",
+            StackHorizontalAlignment.SpaceBetween => "space-between",
             _ => "start",
         };
     }
@@ -134,6 +145,7 @@ public partial class Stack : FluentComponentBase
             StackVerticalAlignment.Top => "start",
             StackVerticalAlignment.Center => "center",
             StackVerticalAlignment.Bottom => "end",
+            StackVerticalAlignment.SpaceBetween => "space-between",
             _ => "start",
         };
     }

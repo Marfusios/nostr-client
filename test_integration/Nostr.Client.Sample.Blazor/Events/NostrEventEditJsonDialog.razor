@@ -1,0 +1,124 @@
+﻿@using Newtonsoft.Json
+@using Nostr.Client.Json
+@using BlazorMonaco;
+@using BlazorMonaco.Editor;
+
+<FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
+    <div class="content">
+        
+        <StandaloneCodeEditor @ref="_editor" ConstructionOptions="GetInitOptions"></StandaloneCodeEditor>
+        
+        <div class="buttons">
+            <FluentButton Appearance="Appearance.Accent" @onclick="OnApply">Apply</FluentButton>
+            <FluentButton @onclick="OnDiscard">Discard</FluentButton>
+            <span class="error-message">
+                @_error
+            </span>
+        </div>
+
+    </div>
+</FluentDialog>
+
+@code {
+    private FluentDialog? _eventDialog;
+    private StandaloneCodeEditor? _editor;
+    private string? _data;
+    private string? _error;
+
+    private readonly string _themeName = "vs";
+
+    [Parameter]
+    public EventCallback<NostrEvent> Applied { get; set; }
+
+    public async Task ShowEvent(NostrEvent? ev)
+    {
+        if (ev == null)
+        {
+            _data = Serialize(new NostrEvent
+            {
+                Kind = NostrKind.ShortTextNote,
+                CreatedAt = DateTime.Now
+            });
+        }
+        else
+        {
+            _data = Serialize(ev);
+        }
+
+        if (_editor != null)
+        {
+            await _editor.SetValue(_data);
+        }
+        _eventDialog?.Show();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Global.SetTheme(_themeName);
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _eventDialog!.Hide();
+        }
+    }
+
+    private void OnHideEvent(DialogEventArgs? args)
+    {
+        // do not close, avoid miss clicks
+    }
+
+    private void OnDiscard()
+    {
+        _eventDialog?.Hide();
+    }
+
+    private async Task OnApply()
+    {
+        try
+        {
+            var data = await _editor!.GetValue();
+            var deserialized = JsonConvert.DeserializeObject<NostrEvent>(data, NostrSerializer.Settings);
+            if (deserialized == null)
+            {
+                _error = "Deserialized to null";
+                return;
+            }
+
+            _error = null;
+            await Applied.InvokeAsync(deserialized);
+            _eventDialog?.Hide();
+        }
+        catch (Exception e)
+        {
+            _error = $"Can't parse: {e.Message}";
+        }
+    }
+
+    private StandaloneEditorConstructionOptions GetInitOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            AutomaticLayout = true,
+            Minimap = new EditorMinimapOptions
+            {
+                Autohide = true
+            },
+            Language = "json",
+            Value = _data,
+            Theme = _themeName
+        };
+    }
+
+    private string Serialize(NostrEvent ev)
+    {
+        var settings = NostrSerializer.Settings;
+        settings.NullValueHandling = NullValueHandling.Include;
+        settings.Formatting = Formatting.Indented;
+        var serialized = JsonConvert.SerializeObject(ev, settings);
+        return serialized;
+    }
+}

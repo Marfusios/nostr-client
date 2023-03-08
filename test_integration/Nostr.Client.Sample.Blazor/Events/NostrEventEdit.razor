@@ -8,16 +8,29 @@
 
 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
     
-    <NostrKindSelectSingle @bind-Value="Event.Kind" @bind-Value:after="OnEventChanged"></NostrKindSelectSingle>
+    <FluentToolbar Style="padding: 0">
+        
+        <FluentButton @onclick="OnJsonEdit" Style="margin-left: 0">
+            <FluentIcon Name="@FluentIcons.WindowDevEdit" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
+            JSON edit
+        </FluentButton>
+
+    </FluentToolbar>
+
+    <Stack Orientation="Orientation.Horizontal" HorizontalGap="20">
+        
+        <NostrKindSelectSingle @bind-Value="Event.Kind" @bind-Value:after="OnEventChanged"></NostrKindSelectSingle>
     
-    <Stack Orientation="Orientation.Vertical" VerticalGap="5">
-        <strong>Created at</strong>
-        <Stack Orientation="Orientation.Horizontal">
+        <Stack Orientation="Orientation.Vertical" VerticalGap="5">
+            <Stack Orientation="Orientation.Horizontal">
+                <strong>Created at</strong>
+                <FluentButton Appearance="Appearance.Neutral" @onclick="OnNow" title="Select the current date and time" style="height: auto">
+                    now
+                </FluentButton>
+            </Stack>
             <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="Event.CreatedAt" @bind-Value:after="OnEventChanged" />
-            <FluentButton Appearance="Appearance.Neutral" @onclick="OnNow" title="Select the current date and time" style="height: auto">
-                now
-            </FluentButton>
         </Stack>
+
     </Stack>
 
     <FluentTextArea style="width: 100%" Placeholder="text" Resize="TextAreaResize.Vertical" @bind-Value="Event.Content" @bind-Value:after="OnEventChanged">
@@ -39,7 +52,7 @@
                 
                 @foreach (var tag in _tags)
                 {
-                    <FluentTreeItem>
+                    <FluentTreeItem Expanded="true">
                         <Stack Orientation="Orientation.Horizontal" HorizontalGap="5">
                             <FluentTextField Placeholder="tag identifier" @bind-Value="@tag.TagIdentifier" @bind-Value:after="OnEventChanged">
                             </FluentTextField>
@@ -111,6 +124,8 @@
     </Stack>
     
     <NostrSignatureValidator PublicOrPrivateKey="@_privateOrPublicKey" SignedData="@Event.Id" Signature="@Event.Sig"></NostrSignatureValidator>
+    
+    <NostrEventEditJsonDialog @ref="_eventJsonDialog" Applied="OnAppliedJsonEvent"></NostrEventEditJsonDialog>
 
 </Stack>
 
@@ -118,6 +133,7 @@
     private string? _privateOrPublicKey;
     private string? _privateKeyStr;
     private NostrPrivateKey? _privateKey;
+    private NostrEventEditJsonDialog? _eventJsonDialog;
 
     private readonly List<NostrEventTag> _tags = new();
     private readonly Dictionary<NostrEventTag, List<TagValue>> _tagValues = new();
@@ -125,6 +141,21 @@
     [Parameter]
     [Required]
     public NostrEvent Event { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<NostrEvent> EventChanged { get; set; }
+
+    private async Task OnAppliedJsonEvent(NostrEvent ev)
+    {
+        Event = ev;
+        RestoreTags(Event);
+        OnPubKeyChanged();
+
+        if (EventChanged.HasDelegate)
+        {
+            await EventChanged.InvokeAsync(ev);
+        }
+    }
 
     private void OnEventChanged()
     {
@@ -226,22 +257,6 @@
         _privateOrPublicKey = _privateKey.Bech32;
     }
 
-    private void UpdateTags()
-    {
-        foreach (var tag in _tags)
-        {
-            var values = _tagValues[tag];
-            tag.AdditionalData = values
-                .OrderBy(x => x.Order)
-                .Where(x => !string.IsNullOrWhiteSpace(x.Value))
-                .Select(x => x.Value!)
-                .ToArray();
-        }
-        Event.Tags = _tags
-            .Where(x => !string.IsNullOrWhiteSpace(x.TagIdentifier))
-            .ToArray();
-    }
-
     private void OnAddTagGroup()
     {
         NostrEventTag tag;
@@ -275,6 +290,50 @@
     {
         _tagValues[tag].Remove(tagValue);
         OnEventChanged();
+    }
+
+    private void UpdateTags()
+    {
+        foreach (var tag in _tags)
+        {
+            var values = _tagValues[tag];
+            tag.AdditionalData = values
+                .OrderBy(x => x.Order)
+                .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                .Select(x => x.Value!)
+                .ToArray();
+        }
+        Event.Tags = _tags
+            .Where(x => !string.IsNullOrWhiteSpace(x.TagIdentifier))
+            .ToArray();
+    }
+
+    private void RestoreTags(NostrEvent ev)
+    {
+        _tags.Clear();
+        _tagValues.Clear();
+
+        if (ev.Tags == null)
+            return;
+        foreach (var tag in ev.Tags)
+        {
+            _tags.Add(tag);
+            if(tag.AdditionalData.Any())
+                _tagValues[tag] = new List<TagValue>();
+            var counter = 0;
+            foreach (var tagData in tag.AdditionalData)
+            {
+                _tagValues[tag].Add(new TagValue(counter) {Value = tagData?.ToString()});
+                counter++;
+            }
+        }
+    }
+
+    private async Task OnJsonEdit()
+    {
+        if (_eventJsonDialog == null)
+            return;
+        await _eventJsonDialog.ShowEvent(Event);
     }
 
     private record TagValue(int Order)

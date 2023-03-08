@@ -8,7 +8,7 @@
 
 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
 
-    <NostrEventEdit Event="Event"></NostrEventEdit>
+    <NostrEventEdit @bind-Event="Event"></NostrEventEdit>
 
     <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
         <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
@@ -38,6 +38,9 @@
         Kind = NostrKind.ShortTextNote,
         CreatedAt = DateTime.Now
     };
+
+    [Parameter]
+    public EventCallback<NostrEvent> EventChanged { get; set; }
 
     public void Dispose()
     {
