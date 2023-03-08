@@ -1,25 +1,26 @@
 ﻿@using System.ComponentModel.DataAnnotations
 @using Newtonsoft.Json
 @using Newtonsoft.Json.Linq
+@using Nostr.Client.Json
 
 <div>
-    <PageHeader Title3="@Event?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
-    @if (Event is NostrMetadataEvent or NostrContactEvent)
+    <PageHeader Title3="@_displayedEvent?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
+    @if (_displayedEvent is NostrMetadataEvent or NostrContactEvent)
     {
-        <pre>@FormatEventContent(Event?.Content)</pre>
+        <pre>@FormatEventContent(_displayedEvent?.Content)</pre>
     }
     else
     {
-        <p style="font-size: 18px">@FormatEventContent(Event?.Content)</p>
+        <p style="font-size: 18px">@FormatEventContent(_displayedEvent?.Content)</p>
     }
        
-    @if (Event?.Tags?.Any() == true)
+    @if (_displayedEvent?.Tags?.Any() == true)
     {
         <p>
             <strong>Tags</strong>
             <FluentTreeView>
-                
-                @foreach (var tag in Event.Tags.GroupBy(x => x.TagIdentifier))
+
+                @foreach (var tag in _displayedEvent.Tags.GroupBy(x => x.TagIdentifier))
                 {
                     <FluentTreeItem>
                         <span>@tag.Key <small>(@tag.SelectMany(x => x.AdditionalData).Count())</small></span>
@@ -51,32 +52,58 @@
 
     <p>
         <strong>Created at</strong>
-        <div>@Event?.CreatedAt?.ToLocalTime().ToString("F")</div>
+        <div>@_displayedEvent?.CreatedAt?.ToLocalTime().ToString("F")</div>
     </p>
     <p>
         <strong>Id</strong>
-        @if (Event?.Kind == NostrKind.ShortTextNote)
+        @if (_displayedEvent?.Kind == NostrKind.ShortTextNote)
         {
-            <div>@Event?.Id</div>
-            <div><a class="clear-link" href="@ExternalLinks.GetLinkToEvent(Event?.Id)" target="_blank">@ExternalLinks.FormatToNote(Event?.Id)</a></div>
+            <div>@_displayedEvent?.Id</div>
+            <div><a class="clear-link" href="@ExternalLinks.GetLinkToEvent(_displayedEvent?.Id)" target="_blank">@ExternalLinks.FormatToNote(_displayedEvent?.Id)</a></div>
         }
         else
         {
-            <div>@Event?.Id</div>
+            <div>@_displayedEvent?.Id</div>
         }
     </p>
     <p>
         <strong>Author</strong>
-        <div>@Event?.Pubkey</div>
-        <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(Event?.Pubkey)" target="_blank">@ExternalLinks.FormatToNpub(Event?.Pubkey)</a></div>
+        <div>@_displayedEvent?.Pubkey</div>
+        <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(_displayedEvent?.Pubkey)" target="_blank">@ExternalLinks.FormatToNpub(_displayedEvent?.Pubkey)</a></div>
     </p>
+    
+    @if (_eventJson == null)
+    {
+        <FluentButton Appearance="Appearance.Neutral" @onclick="OnDisplayJson">
+            <FluentIcon Name="@FluentIcons.WindowDevTools" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
+            Display JSON
+        </FluentButton>
+    }
+    else
+    {
+        <pre>@_eventJson</pre>
+    }
 
 </div>
 
 @code {
+    private NostrEvent? _displayedEvent;
+    private string? _eventJson;
+
     [Parameter]
     [Required]
     public NostrEvent? Event { get; set; } = new();
+
+    protected override void OnParametersSet()
+    {
+        if (Event == null || !Event.Equals(_displayedEvent))
+        {
+            _eventJson = null;
+            _displayedEvent = Event;
+        }
+
+        base.OnParametersSet();
+    }
 
     private static string FormatEventContent(string? content)
     {
@@ -92,5 +119,15 @@
         {
             return content;
         }
+    }
+
+    private void OnDisplayJson()
+    {
+        if (_displayedEvent == null)
+            return;
+
+        var settings = NostrSerializer.Settings;
+        settings.Formatting = Formatting.Indented;
+        _eventJson = JsonConvert.SerializeObject(_displayedEvent, settings);
     }
 }
