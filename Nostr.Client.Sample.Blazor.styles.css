@@ -202,13 +202,13 @@ fluent-card[b-n7e16r3r7k] {
 .sig-valid[b-g80od27w9u] {
     padding: 10px;
     border: dotted 2px var(--success);
-    border-radius: 10px;
+    border-radius: 5px;
     color: var(--success);
 }
 
 .sig-invalid[b-g80od27w9u] {
     padding: 10px;
     border: dotted 2px var(--error);
-    border-radius: 10px;
+    border-radius: 5px;
     color: var(--error);
 }
