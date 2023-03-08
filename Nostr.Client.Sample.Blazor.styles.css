@@ -121,6 +121,38 @@
 }
 /* /Events/NostrEventEdit.razor.rz.scp.css */
 
+/* /Events/NostrEventEditJsonDialog.razor.rz.scp.css */
+[b-xfkxbdb8ii] .monaco-editor-container {
+    width: 100%;
+    height: 400px;
+}
+
+[b-xfkxbdb8ii] .monaco-editor-background {
+    background-color: #fbfbfb;
+}
+
+[b-xfkxbdb8ii] .monaco-editor .margin {
+    background-color: #fbfbfb;
+}
+
+[b-xfkxbdb8ii] .decorationsOverviewRuler {
+    background-color: #fbfbfb;
+}
+
+.content[b-xfkxbdb8ii] {
+    padding: 0;
+    margin-left: calc(var(--design-unit) * 6px);
+    margin-right: calc(var(--design-unit) * 6px);
+    margin-top: calc(var(--design-unit) * 6px);
+}
+
+.buttons[b-xfkxbdb8ii] {
+    padding-top: 10px;
+}
+
+.error-message[b-xfkxbdb8ii] {
+    color: var(--error);
+}
 /* /Events/NostrOkTable.razor.rz.scp.css */
 .local-link[b-nfrib90g62] {
     cursor: pointer;
