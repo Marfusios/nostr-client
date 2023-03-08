@@ -21,21 +21,22 @@ namespace Nostr.Client.Sample.Blazor.Events
             var eventId = ev?.Id;
             if (eventId == null)
                 return;
-            _events[eventId] = ev!;
+            var clone = ev!.DeepClone();
+            _events[eventId] = clone;
         }
 
         public NostrEventResponse? FindResponse(string eventId)
         {
-            if (_events.ContainsKey(eventId))
-                return _responses[eventId];
-            return null;
+            return _events.ContainsKey(eventId) ?
+                _responses[eventId] :
+                null;
         }
 
         public NostrEvent? FindEvent(string eventId)
         {
-            if (_events.ContainsKey(eventId))
-                return _events[eventId];
-            return null;
+            return _events.ContainsKey(eventId) ?
+                _events[eventId] :
+                null;
         }
 
         public void Clear()

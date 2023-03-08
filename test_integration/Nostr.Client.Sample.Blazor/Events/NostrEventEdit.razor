@@ -4,6 +4,7 @@
 @using Nostr.Client.Messages
 @using Nostr.Client.Requests
 @using Nostr.Client.Utils
+@inject IJSRuntime JsRuntime
 
 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
     
@@ -12,7 +13,7 @@
     <Stack Orientation="Orientation.Vertical" VerticalGap="5">
         <strong>Created at</strong>
         <Stack Orientation="Orientation.Horizontal">
-            <InputDateTime @bind-Value="Event.CreatedAt" @bind-Value:after="OnEventChanged"></InputDateTime>
+            <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="Event.CreatedAt" @bind-Value:after="OnEventChanged" />
             <FluentButton Appearance="Appearance.Neutral" @onclick="OnNow" title="Select the current date and time" style="height: auto">
                 now
             </FluentButton>
@@ -78,10 +79,16 @@
     
     <Stack Orientation="Orientation.Vertical" VerticalGap="5">
         
-        <FluentTextField Style="width: 100%" Placeholder="npub1xxx or hex" @bind-Value="Event.Pubkey" @bind-Value:after="OnPubKeyChanged">
-            <FluentIcon Name="@FluentIcons.Person" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
-            <strong>Pubkey</strong>
-        </FluentTextField>
+        <Stack Orientation="Orientation.Horizontal" HorizontalGap="10">
+            <FluentTextField Style="width: 100%" Placeholder="npub1xxx or hex" @bind-Value="Event.Pubkey" @bind-Value:after="OnPubKeyChanged">
+                <FluentIcon Name="@FluentIcons.Person" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+                <strong>Pubkey</strong>
+            </FluentTextField>
+
+            <FluentButton Appearance="Appearance.Neutral" @onclick="OnOpenPubkey" title="Open user profile in a new tab" style="align-self: end">
+                <FluentIcon Name="@FluentIcons.WindowNew" Size="@IconSize.Size16" Color="Color.Neutral" />
+            </FluentButton>
+        </Stack>
 
         <FluentTextField Style="width: 100%" Placeholder="hex" @bind-Value="Event.Sig" @bind-Value:after="OnSignatureChanged">
             <FluentIcon Name="@FluentIcons.Signature" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
@@ -147,6 +154,12 @@
     {
         _privateKey = null;
         _privateKeyStr = null;
+
+        if (NostrConverter.TryToHex(Event.Pubkey, out var publicHex, out var hrp) && hrp == "npub")
+        {
+            Event.Pubkey = publicHex;
+        }
+
         OnEventChanged();
     }
 
@@ -187,6 +200,15 @@
         OnEventChanged();
     }
 
+    private async Task OnOpenPubkey()
+    {
+        if (string.IsNullOrWhiteSpace(Event.Pubkey))
+            return;
+
+        var link = ExternalLinks.GetLinkToProfile(Event.Pubkey);
+        await JsRuntime.InvokeVoidAsync("open", link, "_blank");
+    }
+
     private void OnNow()
     {
         Event.CreatedAt = DateTime.Now;
@@ -195,13 +217,13 @@
 
     private void UpdatePrivateOrPublicKey()
     {
-        if (string.IsNullOrWhiteSpace(_privateKeyStr))
+        if (_privateKey == null)
         {
             _privateOrPublicKey = Event.Pubkey;
             return;
         }
 
-        _privateOrPublicKey = _privateKeyStr;
+        _privateOrPublicKey = _privateKey.Bech32;
     }
 
     private void UpdateTags()
