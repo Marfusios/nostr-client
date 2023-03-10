@@ -119,6 +119,21 @@
     display: flex;
     flex-direction: row;
 }
+/* /Events/NostrDirectEventDialog.razor.rz.scp.css */
+.content[b-u3t0ade4ml] {
+    padding: 0;
+    margin-left: calc(var(--design-unit) * 6px);
+    margin-right: calc(var(--design-unit) * 6px);
+    margin-top: calc(var(--design-unit) * 6px);
+}
+
+.buttons[b-u3t0ade4ml] {
+    padding-top: 10px;
+}
+
+.error-message[b-u3t0ade4ml] {
+    color: var(--error);
+}
 /* /Events/NostrEventEdit.razor.rz.scp.css */
 
 /* /Events/NostrEventEditJsonDialog.razor.rz.scp.css */
