@@ -14,6 +14,11 @@
             <FluentIcon Name="@FluentIcons.WindowDevEdit" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
             JSON edit
         </FluentButton>
+        
+        <FluentButton @onclick="OnEncryptDirect">
+            <FluentIcon Name="@FluentIcons.DocumentLock" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
+            Encrypt DM
+        </FluentButton>
 
     </FluentToolbar>
 
@@ -125,7 +130,8 @@
     
     <NostrSignatureValidator PublicOrPrivateKey="@_privateOrPublicKey" SignedData="@Event.Id" Signature="@Event.Sig"></NostrSignatureValidator>
     
-    <NostrEventEditJsonDialog @ref="_eventJsonDialog" Applied="OnAppliedJsonEvent"></NostrEventEditJsonDialog>
+    <NostrEventEditJsonDialog @ref="_eventJsonDialog" Applied="OnAppliedEventFromDialog"></NostrEventEditJsonDialog>
+    <NostrDirectEventDialog @ref="_eventDirectDialog" Applied="OnAppliedEventFromDialog" AppliedPrivateKey="OnAppliedPrivateKey"></NostrDirectEventDialog>
 
 </Stack>
 
@@ -133,7 +139,9 @@
     private string? _privateOrPublicKey;
     private string? _privateKeyStr;
     private NostrPrivateKey? _privateKey;
+
     private NostrEventEditJsonDialog? _eventJsonDialog;
+    private NostrDirectEventDialog? _eventDirectDialog;
 
     private readonly List<NostrEventTag> _tags = new();
     private readonly Dictionary<NostrEventTag, List<TagValue>> _tagValues = new();
@@ -145,11 +153,12 @@
     [Parameter]
     public EventCallback<NostrEvent> EventChanged { get; set; }
 
-    private async Task OnAppliedJsonEvent(NostrEvent ev)
+    private async Task OnAppliedEventFromDialog(NostrEvent ev)
     {
         Event = ev;
         RestoreTags(Event);
-        OnPubKeyChanged();
+        TryConvertPubkey();
+        OnEventChanged();
 
         if (EventChanged.HasDelegate)
         {
@@ -181,22 +190,33 @@
         }
     }
 
+    private void OnAppliedPrivateKey(NostrPrivateKey privateKey)
+    {
+        _privateKey = privateKey;
+        _privateKeyStr = privateKey.Bech32;
+        _privateOrPublicKey = privateKey.Bech32;
+    }
+
     private void OnPubKeyChanged()
     {
         _privateKey = null;
         _privateKeyStr = null;
 
+        TryConvertPubkey();
+        OnEventChanged();
+    }
+
+    private void TryConvertPubkey()
+    {
         if (NostrConverter.TryToHex(Event.Pubkey, out var publicHex, out var hrp) && hrp == "npub")
         {
             Event.Pubkey = publicHex;
         }
-
-        OnEventChanged();
     }
 
     private void OnSignatureChanged()
     {
-
+        OnEventChanged();
     }
 
     private void OnPrivateKeyChanged()
@@ -334,6 +354,13 @@
         if (_eventJsonDialog == null)
             return;
         await _eventJsonDialog.ShowEvent(Event);
+    }
+
+    private void OnEncryptDirect()
+    {
+        if (_eventDirectDialog == null)
+            return;
+        _eventDirectDialog.ShowEvent(Event, _privateKeyStr, Event.Pubkey);
     }
 
     private record TagValue(int Order)

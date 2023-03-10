@@ -1,0 +1,14 @@
+﻿.content {
+    padding: 0;
+    margin-left: calc(var(--design-unit) * 6px);
+    margin-right: calc(var(--design-unit) * 6px);
+    margin-top: calc(var(--design-unit) * 6px);
+}
+
+.buttons {
+    padding-top: 10px;
+}
+
+.error-message {
+    color: var(--error);
+}

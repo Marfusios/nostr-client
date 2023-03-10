@@ -62,6 +62,24 @@ var signed = ev.Sign(key);
 client.Send(new NostrEventRequest(signed));
 ```
 
+#### Sending encrypted direct message (NIP-04)
+
+```csharp
+var sender = NostrPrivateKey.FromBech32("nsec1l0a7m5dlg4h9wurhnmgsq5nv9cqyvdwsutk4yf3w4fzzaqw7n80ssdfzkg");
+var receiver = NostrPublicKey.FromBech32("npub1dd668dyr9un9nzf9fjjkpdcqmge584c86gceu7j97nsp4lj2pscs0xk075");
+
+var ev = new NostrEvent
+{
+    CreatedAt = DateTime.UtcNow,
+    Content = $"Test private message from C# client"
+};
+
+var encrypted = ev.EncryptDirect(sender, receiver);
+var signed = encrypted.Sign(sender);
+
+client.Send(new NostrEventRequest(signed));
+```
+
 #### Multi relays support
 
 ```csharp
@@ -84,7 +102,7 @@ More usage examples:
 * Console sample ([link](test_integration/Nostr.Client.Sample.Console/Program.cs))
 * Blazor sample ([link](test_integration/Nostr.Client.Sample.Blazor), [deployed](https://nostrdebug.com))
 
-![image](https://user-images.githubusercontent.com/3494837/219864079-b044327a-3db5-4f22-b738-3160a561b5f3.png)
+![image](https://raw.githubusercontent.com/Marfusios/nostr-client/master/test_integration/Nostr.Client.Sample.Blazor/wwwroot/nostr-preview.png)
 
 ### NIP's coverage
 

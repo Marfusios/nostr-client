@@ -1,0 +1,145 @@
+﻿@using Nostr.Client.Keys
+
+<FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
+    <div class="content">
+        
+        <FluentTextArea style="width: 100%" Placeholder="text" Resize="TextAreaResize.Vertical" @bind-Value="_content">
+            <strong>Content</strong>
+        </FluentTextArea>
+        
+        <FluentTextField Style="width: 100%" Placeholder="npub1xxx or hex" @bind-Value="_receiverKeyStr">
+            <FluentIcon Name="@FluentIcons.Person" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+            <strong>Receiver (public key)</strong>
+        </FluentTextField>
+
+        <Stack Orientation="Orientation.Horizontal" HorizontalGap="10">
+            <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" @bind-Value="_senderKeyStr">
+                <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
+                <strong>Sender (private key)</strong>
+            </FluentTextField>
+
+            <FluentButton Appearance="Appearance.Neutral" @onclick="OnGeneratePrivateKey" title="Generate a new private key" style="align-self: end">
+                <FluentIcon Name="@FluentIcons.SquareAdd" Size="@IconSize.Size16" Color="Color.Neutral" />
+            </FluentButton>
+        </Stack>
+
+        <div class="buttons">
+            <FluentButton Appearance="Appearance.Accent" @onclick="OnApply" Disabled="@(_senderKeyStr == null || _receiverKeyStr == null || _content == null)">
+                <FluentIcon Name="@FluentIcons.LockClosed" Slot="start" Size="@IconSize.Size16" Color="Color.Fill" />
+                Encrypt
+            </FluentButton>
+            <FluentButton @onclick="OnDiscard">
+                <FluentIcon Name="@FluentIcons.Delete" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+                Discard
+            </FluentButton>
+            <span class="error-message">
+                @_error
+            </span>
+        </div>
+
+    </div>
+</FluentDialog>
+
+@code {
+    private FluentDialog? _eventDialog;
+    private NostrEvent? _selectedEvent;
+
+    private string? _receiverKeyStr;
+    private string? _senderKeyStr;
+
+    private string? _content;
+    private string? _error;
+
+    [Parameter]
+    public EventCallback<NostrEvent> Applied { get; set; }
+
+    [Parameter]
+    public EventCallback<NostrPrivateKey> AppliedPrivateKey { get; set; }
+
+    public void ShowEvent(NostrEvent? ev, string? senderPrivateKey, string? receiverPublicKey)
+    {
+        if (ev == null)
+        {
+            return;
+        }
+
+        _content = ev.Content;
+        _senderKeyStr = senderPrivateKey;
+        _receiverKeyStr = receiverPublicKey;
+        _selectedEvent = ev;
+
+        _eventDialog?.Show();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _eventDialog!.Hide();
+        }
+    }
+
+    private void OnHideEvent(DialogEventArgs? args)
+    {
+        if (args?.Reason != null && args.Reason == "dismiss")
+        {
+            _eventDialog!.Hide();
+        }
+    }
+
+    private void OnDiscard()
+    {
+        _error = null;
+        _eventDialog?.Hide();
+    }
+
+    private async Task OnApply()
+    {
+        try
+        {
+            NostrConverter.TryToHex(_receiverKeyStr, out var receiverHex, out _);
+            receiverHex ??= _receiverKeyStr;
+
+            NostrConverter.TryToHex(_senderKeyStr, out var senderHex, out _);
+            senderHex ??= _senderKeyStr;
+
+            if (string.IsNullOrWhiteSpace(receiverHex))
+            {
+                _error = "Receiver public key is not set";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(senderHex))
+            {
+                _error = "Sender private key is not set";
+                return;
+            }
+
+            var receiverKey = NostrPublicKey.FromHex(receiverHex);
+            var senderKey = NostrPrivateKey.FromHex(senderHex);
+
+            var ev = _selectedEvent ?? new NostrEvent();
+            ev.Kind = NostrKind.EncryptedDm;
+
+            var encrypted = ev.EncryptDirect(senderKey, receiverKey);
+
+            _error = null;
+            await AppliedPrivateKey.InvokeAsync(senderKey);
+            await Applied.InvokeAsync(encrypted);
+            _eventDialog?.Hide();
+        }
+        catch (Exception e)
+        {
+            _error = e.Message;
+        }
+    }
+
+    private void OnGeneratePrivateKey()
+    {
+        var privateKey = NostrPrivateKey.GenerateNew();
+        _senderKeyStr = privateKey.Bech32;
+
+        if (string.IsNullOrWhiteSpace(_receiverKeyStr))
+            _receiverKeyStr = privateKey.DerivePublicKey().Bech32;
+    }
+}
