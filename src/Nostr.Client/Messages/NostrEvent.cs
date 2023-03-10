@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Nostr.Client.Json;
 using Nostr.Client.Keys;
+using Nostr.Client.Messages.Direct;
 using Nostr.Client.Utils;
 
 namespace Nostr.Client.Messages
@@ -29,7 +30,7 @@ namespace Nostr.Client.Messages
         public NostrKind Kind { get; set; }
 
         [ArrayProperty(4)]
-        public NostrEventTag[]? Tags { get; set; } = Array.Empty<NostrEventTag>();
+        public NostrEventTags? Tags { get; set; } = NostrEventTags.Empty;
 
         /// <summary>
         /// Arbitrary string
@@ -69,13 +70,21 @@ namespace Nostr.Client.Messages
         /// </summary>
         public NostrEvent DeepClone(string? id, string? signature, string? pubKey)
         {
+            return DeepClone(id, signature, pubKey, Tags);
+        }
+
+        /// <summary>
+        /// Clone event with custom Id, Signature, PubKey and tags
+        /// </summary>
+        public NostrEvent DeepClone(string? id, string? signature, string? pubKey, NostrEventTags? tags)
+        {
             return new NostrEvent
             {
                 Id = id,
                 Pubkey = pubKey,
                 CreatedAt = CreatedAt,
                 Kind = Kind,
-                Tags = Tags?.Select(x => x.DeepClone()).ToArray() ?? Array.Empty<NostrEventTag>(),
+                Tags = tags?.DeepClone() ?? NostrEventTags.Empty,
                 Content = Content,
                 Sig = signature,
                 AdditionalData = AdditionalData.ToDictionary(x => x.Key, y => y.Value)
@@ -172,6 +181,17 @@ namespace Nostr.Client.Messages
                 return false;
             var publicKey = NostrPublicKey.FromHex(Pubkey);
             return publicKey.IsHexSignatureValid(Sig, GetOrComputeId());
+        }
+
+        public NostrEncryptedDirectEvent EncryptDirect(NostrPrivateKey sender, NostrPublicKey receiver)
+        {
+            var receiverPubkey = receiver.Hex;
+            var tagsWithReceiver = Tags ?? new NostrEventTags();
+            if (!tagsWithReceiver.ContainsProfile(receiverPubkey))
+                tagsWithReceiver.Add(NostrEventTag.Profile(receiverPubkey));
+
+            var clone = DeepClone(null, null, sender.Hex, tagsWithReceiver);
+            return NostrEncryptedDirectEvent.Encrypt(clone, sender);
         }
 
         private byte[] ComputeIdBytes()

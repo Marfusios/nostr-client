@@ -8,6 +8,9 @@ namespace Nostr.Client.Messages
     [JsonConverter(typeof(ArrayConverter))]
     public class NostrEventTag : IHaveAdditionalData
     {
+        public const string EventIdentifier = "e";
+        public const string ProfileIdentifier = "p";
+
         public NostrEventTag()
         {
         }
@@ -33,6 +36,16 @@ namespace Nostr.Client.Messages
                 TagIdentifier = TagIdentifier,
                 AdditionalData = (object[])AdditionalData.Clone()
             };
+        }
+
+        public static NostrEventTag Event(string eventId)
+        {
+            return new NostrEventTag(EventIdentifier, eventId);
+        }
+
+        public static NostrEventTag Profile(string pubkey)
+        {
+            return new NostrEventTag(ProfileIdentifier, pubkey);
         }
     }
 }

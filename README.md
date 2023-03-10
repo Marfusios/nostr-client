@@ -91,7 +91,7 @@ More usage examples:
 - [x] NIP-01: Basic protocol flow description
 - [x] NIP-02: Contact List and Petnames (No petname support)
 - [ ] NIP-03: OpenTimestamps Attestations for Events
-- [ ] NIP-04: Encrypted Direct Message
+- [x] NIP-04: Encrypted Direct Message
 - [ ] NIP-05: Mapping Nostr keys to DNS-based internet identifiers
 - [ ] NIP-06: Basic key derivation from mnemonic seed phrase
 - [ ] NIP-07: `window.nostr` capability for web browsers

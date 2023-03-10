@@ -31,6 +31,27 @@ namespace Nostr.Client.Keys
         }
 
         /// <summary>
+        /// Derive shared key between secret and public one
+        /// </summary>
+        public NostrPublicKey DeriveSharedKey(NostrPublicKey publicKey)
+        {
+            // 32 + 1 byte for the compression (0x02) prefix.
+            Span<byte> input = stackalloc byte[33];
+            input[0] = 0x02;
+            publicKey.Ec.WriteToSpan(input[1..]);
+
+            var success = Context.Instance.TryCreatePubKey(input, out var prefixedPublicKey);
+            if (!success || prefixedPublicKey == null)
+                throw new InvalidOperationException("Can't create prefixed public key");
+
+            var sharedKey = prefixedPublicKey.GetSharedPubkey(Ec);
+            if (sharedKey == null)
+                throw new InvalidOperationException("Can't create shared public key");
+
+            return NostrPublicKey.FromEc(sharedKey.ToXOnlyPubKey());
+        }
+
+        /// <summary>
         /// Sign hex with the private key. 
         /// Returns signature in hex format.
         /// </summary>

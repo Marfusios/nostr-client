@@ -10,7 +10,7 @@ using Nostr.Client.Responses;
 using Websocket.Client;
 using Websocket.Client.Models;
 
-namespace Nostr.Client.Tests
+namespace Nostr.Client.Tests.Fakes
 {
     public class NostrFakeCommunicator : INostrCommunicator
     {

@@ -261,9 +261,9 @@
     {
         NostrEventTag tag;
         if (!_tags.Any())
-            tag = new NostrEventTag("e");
+            tag = new NostrEventTag(NostrEventTag.EventIdentifier);
         else if (_tags.Count == 1)
-            tag = new NostrEventTag("p");
+            tag = new NostrEventTag(NostrEventTag.ProfileIdentifier);
         else
             tag = new NostrEventTag(null);
 
@@ -303,9 +303,9 @@
                 .Select(x => x.Value!)
                 .ToArray();
         }
-        Event.Tags = _tags
+        Event.Tags = new NostrEventTags(_tags
             .Where(x => !string.IsNullOrWhiteSpace(x.TagIdentifier))
-            .ToArray();
+            .ToArray());
     }
 
     private void RestoreTags(NostrEvent ev)

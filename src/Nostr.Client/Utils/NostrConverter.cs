@@ -1,5 +1,8 @@
 ﻿namespace Nostr.Client.Utils
 {
+    /// <summary>
+    /// Nostr conversion utilities
+    /// </summary>
     public static class NostrConverter
     {
         /// <summary>

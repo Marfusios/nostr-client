@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Nostr.Client.Client;
 using Nostr.Client.Messages;
 using Nostr.Client.Messages.Contacts;
+using Nostr.Client.Messages.Direct;
 using Nostr.Client.Messages.Metadata;
 using Nostr.Client.Requests;
 using Serilog;
@@ -44,6 +45,15 @@ namespace Nostr.Client.Sample.Console
                     }
                 });
 
+            events
+                .Select(x => x.Event!)
+                .OfType<NostrEncryptedDirectEvent>()
+                .Subscribe(x =>
+                {
+                    Log.Information("DM message: {content}, from {from} to {to}", x.EncryptedContent, x.Pubkey?[..4],
+                            x.RecipientPubkey?[..4]);
+                });
+
             _client.Streams.NoticeStream.Subscribe(x => Log.Information("[{relay}] Notice: {message}", x.CommunicatorName, x.Message));
             _client.Streams.EoseStream.Subscribe(x => Log.Information("[{relay}] EOSE of subscription {subscription}", x.CommunicatorName, x.Subscription));
             _client.Streams.OkStream.Subscribe(x => Log.Information("[{relay}] OK {subscription} success: {success} {message}", x.CommunicatorName, x.EventId, x.Accepted, x.Message));
@@ -78,12 +88,15 @@ namespace Nostr.Client.Sample.Console
                     "83e818dfbeccea56b0f551576b3fd39a7a50e1d8159343500368fa085ccd964b",
                     "7fa56f5d6962ab1e3cd424e758c3002b8665f7b0d8dcee9fe9e288d7751ac194",
                     "46bb7d86f84da649ff8a2404533de360d7baa6fe48fc03f779848c5f4c95d3b9",
-                    "a575563c6b5b7a029f472e859ec2af026938cd8a03cf0fe2e6b82472b54aa638"
+                    "a575563c6b5b7a029f472e859ec2af026938cd8a03cf0fe2e6b82472b54aa638",
+                    "7e8575871843980ffee6f8bcd37cc381589b5653bb8a1b3e585bf5e2a5c15f78",
+                    "d27790fcb3f9afa0d709b2e9c5995151bc5ad008079bd0a474aa101d80e0eed3"
                 },
                 Kinds = new[]
                 {
                     NostrKind.Metadata,
                     NostrKind.ShortTextNote,
+                    NostrKind.EncryptedDm,
                     NostrKind.Reaction,
                     NostrKind.Contacts,
                     NostrKind.RecommendRelay,

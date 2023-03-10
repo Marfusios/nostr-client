@@ -31,8 +31,4 @@
 		<ProjectReference Include="..\..\src\Nostr.Client\Nostr.Client.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="Fakes\" />
-	</ItemGroup>
-
 </Project>

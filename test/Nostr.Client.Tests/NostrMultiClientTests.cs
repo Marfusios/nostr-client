@@ -2,6 +2,7 @@
 using Nostr.Client.Messages;
 using Nostr.Client.Requests;
 using Nostr.Client.Responses;
+using Nostr.Client.Tests.Fakes;
 
 namespace Nostr.Client.Tests
 {

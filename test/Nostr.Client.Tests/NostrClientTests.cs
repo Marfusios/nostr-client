@@ -1,7 +1,7 @@
 ﻿using Nostr.Client.Client;
 using Nostr.Client.Messages;
 using Nostr.Client.Requests;
-using Nostr.Client.Responses;
+using Nostr.Client.Tests.Fakes;
 
 namespace Nostr.Client.Tests
 {
@@ -53,11 +53,10 @@ namespace Nostr.Client.Tests
                 Kind = NostrKind.ShortTextNote,
                 CreatedAt = new DateTime(2023, 2, 22, 18, 14, 41, DateTimeKind.Utc),
                 Content = "surprize",
-                Tags = new[]
-                {
+                Tags = new(
                     new NostrEventTag("e", "4eab0a10fa8aa611d55b7f8ea41f7756c69284362a8c8cccf2ed2dc0362d7aad"),
                     new NostrEventTag("p", "7f3b464b9ff3623630485060cbda3a7790131c5339a7803bde8feb79a5e1b06a")
-                },
+                ),
                 Sig = "b0d0b6ec2162bf1beb2ef80fba65dc196c27a0b416eddd4a61aee08777a8364cc9b630a50c22a06fced9aea94cc64fd8486ec66aa3141c21c5a6cdb7c41786bf"
             };
 

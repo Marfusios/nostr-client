@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using Nostr.Client.Messages;
 using Nostr.Client.Messages.Contacts;
+using Nostr.Client.Messages.Direct;
 using Nostr.Client.Messages.Metadata;
 
 namespace Nostr.Client.Json
@@ -40,6 +41,7 @@ namespace Nostr.Client.Json
                 {
                     NostrKind.Metadata => typeof(NostrMetadataEvent),
                     NostrKind.Contacts => typeof(NostrContactEvent),
+                    NostrKind.EncryptedDm => typeof(NostrEncryptedDirectEvent),
                     _ => typeof(NostrEvent)
                 };
             }

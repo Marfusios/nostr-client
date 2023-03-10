@@ -9,7 +9,6 @@ using Nostr.Client.Communicator;
 using Nostr.Client.Keys;
 using Nostr.Client.Messages;
 using Nostr.Client.Requests;
-using Nostr.Client.Responses;
 using Nostr.Client.Sample.Console;
 using Serilog;
 using Serilog.Events;
@@ -129,7 +128,7 @@ void ConsoleOnCancelKeyPress(object? sender, ConsoleCancelEventArgs e)
     exitEvent.Set();
 }
 
-void SendEvent(NostrWebsocketClient client, int counter)
+void SendEvent(INostrClient client, int counter)
 {
     var ev = new NostrEvent
     {
@@ -140,6 +139,25 @@ void SendEvent(NostrWebsocketClient client, int counter)
 
     var key = NostrPrivateKey.FromBech32("nsec1xjyhgzm2cjv2wp64wnh64d2n4s9ylguhwelekh5r38rlsfgk6mes62duaa");
     var signed = ev.Sign(key);
+
+    client.Send(new NostrEventRequest(signed));
+}
+
+void SendDirectMessage(INostrClient client)
+{
+    Log.Information("Sending encrypted direct message");
+
+    var sender = NostrPrivateKey.FromBech32("nsec1l0a7m5dlg4h9wurhnmgsq5nv9cqyvdwsutk4yf3w4fzzaqw7n80ssdfzkg");
+    var receiver = NostrPublicKey.FromHex("d27790fcb3f9afa0d709b2e9c5995151bc5ad008079bd0a474aa101d80e0eed3");
+
+    var ev = new NostrEvent
+    {
+        CreatedAt = DateTime.UtcNow,
+        Content = $"Test private message from C# client"
+    };
+
+    var encrypted = ev.EncryptDirect(sender, receiver);
+    var signed = encrypted.Sign(sender);
 
     client.Send(new NostrEventRequest(signed));
 }
