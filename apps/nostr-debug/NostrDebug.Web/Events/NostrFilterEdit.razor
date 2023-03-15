@@ -78,7 +78,6 @@
     protected override async Task OnInitializedAsync()
     {
         OnFilterRestored();
-        await OnFilterChanged();
         await base.OnInitializedAsync();
     }
 
@@ -151,7 +150,6 @@
         _hoursUntil = Convert.ToInt32(args.Value);
         Filter.Until = DateTimeUtils.UtcNowOnlyHours().AddHours(_hoursUntil.Value).ToUniversalTime();
         await OnFilterChanged();
-        Console.WriteLine("Set until " + Filter.Until);
     }
 
     private async Task SetLimit(ChangeEventArgs args)

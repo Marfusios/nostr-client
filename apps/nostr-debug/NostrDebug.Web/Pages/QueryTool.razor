@@ -51,7 +51,7 @@
     {
         if (string.IsNullOrWhiteSpace(QueryBase64))
         {
-            SerializeFilterToUrl();
+            SerializeFilterToUrl(true);
             return;
         }
 
@@ -62,14 +62,14 @@
 
     private void OnFilterChanged()
     {
-        SerializeFilterToUrl();
+        SerializeFilterToUrl(false);
     }
 
-    private void SerializeFilterToUrl()
+    private void SerializeFilterToUrl(bool replace)
     {
         var serialized = SerializeFilter(_filter);
         var newUrl = Navigation.GetUriWithQueryParameter("base64", serialized);
-        Navigation.NavigateTo(newUrl);
+        Navigation.NavigateTo(newUrl, false, replace);
     }
 
     private static string SerializeFilter(NostrFilter filter)
