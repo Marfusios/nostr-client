@@ -168,6 +168,47 @@
 .error-message[b-0tyumfk97n] {
     color: var(--error);
 }
+/* /Events/NostrEventTable.razor.rz.scp.css */
+.local-link[b-ebjfxbjs34] {
+    cursor: pointer;
+    color: var(--neutral-foreground-rest);
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+}
+/* /Events/NostrFilterEdit.razor.rz.scp.css */
+
+/* /Events/NostrFilterEditJsonDialog.razor.rz.scp.css */
+[b-tl4rs381ly] .monaco-editor-container {
+    width: 100%;
+    height: 400px;
+}
+
+[b-tl4rs381ly] .monaco-editor-background {
+    background-color: #fbfbfb;
+}
+
+[b-tl4rs381ly] .monaco-editor .margin {
+    background-color: #fbfbfb;
+}
+
+[b-tl4rs381ly] .decorationsOverviewRuler {
+    background-color: #fbfbfb;
+}
+
+.content[b-tl4rs381ly] {
+    padding: 0;
+    margin-left: calc(var(--design-unit) * 6px);
+    margin-right: calc(var(--design-unit) * 6px);
+    margin-top: calc(var(--design-unit) * 6px);
+}
+
+.buttons[b-tl4rs381ly] {
+    padding-top: 10px;
+}
+
+.error-message[b-tl4rs381ly] {
+    color: var(--error);
+}
 /* /Events/NostrOkTable.razor.rz.scp.css */
 .local-link[b-vjetv6etv0] {
     cursor: pointer;
@@ -229,7 +270,7 @@ fluent-card[b-3i6j8ohbow] {
     column-gap: 40px;
 }
 /* /Pages/QueryTool.razor.rz.scp.css */
-.filter-form[b-cvvmvghx45] {
+.page-layout[b-cvvmvghx45] {
     width: 100%;
     margin-bottom: 20px;
     display: grid;

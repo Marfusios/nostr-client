@@ -8,7 +8,7 @@
   "resources": {
     "assembly": {
       "BlazorMonaco.dll": "sha256-Hbwc+8Nc7E6NYECP0pDCuU7w9KjJoNK0LYI95D\/mJEI=",
-      "Microsoft.AspNetCore.Components.dll": "sha256-l1TEhju4LmHW6mDHDc5JNY74PgiA8UF61Hxbj2E2CHM=",
+      "Microsoft.AspNetCore.Components.dll": "sha256-zy2InhGSn6FoYsDLh7zSTH0CviPyiux48lbYgp0F+7c=",
       "Microsoft.AspNetCore.Components.Forms.dll": "sha256-rdT9swKzRQEOehVLLyL7HiXLv1DC95n28XYt9REcE6M=",
       "Microsoft.AspNetCore.Components.Web.dll": "sha256-rWjItG7g+sqwVz4Ua+MaJ8t9F0fCxPpsONJK8QER6+0=",
       "Microsoft.AspNetCore.Components.WebAssembly.dll": "sha256-vVlwmx9FEtCfLqYjaahrdktr5s5Mmw0lBob5OeatqX8=",
@@ -29,7 +29,7 @@
       "NBitcoin.Secp256k1.dll": "sha256-tY3EDf3v\/Z1etK7BYvfcc7I\/pXbDorQHScsjoR3j+gQ=",
       "Newtonsoft.Json.dll": "sha256-SBbEJ29XXk2FuAYzoN8urfKUlv4AvcM814Q+YTc73g4=",
       "Nostr.Client.dll": "sha256-I18\/fYJdSGNjhKt3oExjSQR8x9O8wXt5KmbD9w\/6Adc=",
-      "NostrDebug.Web.dll": "sha256-\/vYB4YwxyWQFkLlkFSwMkF9qGo5wVOQp0KenbpYVogw=",
+      "NostrDebug.Web.dll": "sha256-KWu0nRdNSGPkHNrMTtZUzI\/8COGBwIZkZ1RFQFRIh6A=",
       "System.Collections.Concurrent.dll": "sha256-f\/6pWFABCIWZUM5nHJWFnK766FgCagf\/o3eBqzr7TwQ=",
       "System.Collections.dll": "sha256-vbcPCm6JdwJCBiHVrJPm0FFTgsft4ANs+kJBhT+cOmk=",
       "System.Collections.NonGeneric.dll": "sha256-tspdeRZiHjpJF6hEcnjs\/Ni4hDId97i5Q3OISVKfOkk=",
@@ -54,8 +54,8 @@
       "System.Net.WebSockets.Client.dll": "sha256-7Y09fryNCaOEo4dxj2kClu+1gC9853acYCUbTZtP\/R0=",
       "System.Net.WebSockets.dll": "sha256-2OD5a4P2\/PBa9FA1Yup2ER8+sqiMU7gCDlcot0G0yyQ=",
       "System.ObjectModel.dll": "sha256-ZwGl\/1+LedB5fwBGWXu067ReTC5KCL5dDeyIfoirWu8=",
-      "System.Private.CoreLib.dll": "sha256-yul4EhIt7d9VDaHTNh2\/0ysTlNskaVRlv6NVbhJzo0E=",
-      "System.Private.Uri.dll": "sha256-czaTS5cAbBUjhc6sWludCSzp55b7YTlpL05A50gPAjM=",
+      "System.Private.CoreLib.dll": "sha256-JrF+Y4nOFTbGqV1jjFAWTiSF+fmJeM2oO2f1UkGi0pk=",
+      "System.Private.Uri.dll": "sha256-sCjyhZ0b+upuC4eWg4FxbXh1RvQtB8TJ4a84HyFiPTk=",
       "System.Private.Xml.dll": "sha256-MYDo1g1M3nJltbOSewyh\/ZxbNSlNknPTiLJ5pjRL\/cM=",
       "System.Private.Xml.Linq.dll": "sha256-u1pPCCrnzgm+H6j070ip32DWWc9tbjNFNrwcFBIxkB4=",
       "System.Reactive.dll": "sha256-K2wx37H8YBmkKgB+0OXgBXTebqDEf+0MooK\/O7J3Gww=",
