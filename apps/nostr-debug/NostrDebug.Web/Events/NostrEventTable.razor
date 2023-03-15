@@ -1,0 +1,98 @@
+﻿@inject RelayConnection NostrRelay
+@inject EventStorage EventStorage;
+@using System.Reactive.Linq
+@implements IDisposable
+
+<div>
+    <FluentDataGrid RowsData="@_receivedData.AsQueryable()" Pagination="@_pagination" GridTemplateColumns="0.08fr 0.25fr 0.2fr 0.2fr 0.2fr 1fr" RowsDataKey="@(p => p.Id ?? string.Empty)">
+        <TemplateColumn Class="no-padding">
+            <FluentButton Appearance="Appearance.Neutral" @onclick="@(() => OnDisplayEvent(context))" style="height: auto">
+                ...
+            </FluentButton>
+        </TemplateColumn>
+        <TemplateColumn Title="Created" Sortable="true" SortBy="@_sortByDate">
+            <span>@context.CreatedAt?.ToLocalTime().ToString("T")</span>
+        </TemplateColumn>
+        <PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true" />
+        <TemplateColumn Title="Id" Sortable="true">
+            <span>@context.Id[..4]..@context.Id[^4..]</span>
+        </TemplateColumn>
+        <TemplateColumn Title="Author" Sortable="true">
+            <span>@context.Pubkey[..4]..@context.Pubkey[^4..]</span>
+        </TemplateColumn>
+        <PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true" />
+    </FluentDataGrid>
+    <FluentPaginator Value="@_pagination" />
+
+    <Stack Orientation="Orientation.Horizontal" HorizontalGap="10" HorizontalAlignment="StackHorizontalAlignment.Right" VerticalAlignment="StackVerticalAlignment.Center">
+        <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearData">
+            Clear
+            <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
+        </FluentButton>
+
+        <span>Page size</span>
+        <FluentNumberField Min="0" ValueExpression="() => _pagination.ItemsPerPage" Value="@_pagination.ItemsPerPage" @onchange="SetPagination" style="width: 80px">
+        </FluentNumberField>
+    </Stack>
+
+    <NostrEventViewDialog @ref="_eventDialog"></NostrEventViewDialog>
+
+</div>
+
+@code {
+    private readonly HashSet<NostrEvent> _receivedData = new();
+    private readonly PaginationState _pagination = new() { ItemsPerPage = 15 };
+    private NostrEventViewDialog? _eventDialog;
+
+    private readonly GridSort<NostrEvent> _sortByDate = GridSort<NostrEvent>
+        .ByDescending(p => p.CreatedAt);
+
+    private IDisposable? _websocketHandlerEvents;
+
+    public void Dispose()
+    {
+        _websocketHandlerEvents?.Dispose();
+    }
+
+    protected override void OnInitialized()
+    {
+        _websocketHandlerEvents = NostrRelay.Client.Streams.EventStream
+            .Buffer(TimeSpan.FromSeconds(1))
+            .Subscribe(HandleEvent);
+
+        base.OnInitialized();
+    }
+
+    private void HandleEvent(IList<NostrEventResponse> response)
+    {
+        var events = response
+            .Where(x => x.Event != null);
+        foreach (var evView in events)
+        {
+            _receivedData.Add(evView.Event!);
+        }
+        StateHasChanged();
+    }
+
+    private void OnClearData()
+    {
+        _receivedData.Clear();
+    }
+
+    private void SetPagination(ChangeEventArgs args)
+    {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            return;
+        }
+        _pagination.ItemsPerPage = Convert.ToInt32(args.Value);
+    }
+
+    private void OnDisplayEvent(NostrEvent? ev)
+    {
+        if (ev == null)
+            return;
+
+        _eventDialog?.ShowEvent(ev);
+    }
+}

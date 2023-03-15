@@ -1,0 +1,173 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using Nostr.Client.Requests
+
+<Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="10">
+
+    <NostrKindSelect @bind-Value="Filter.Kinds"></NostrKindSelect>
+
+    <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+
+        <FluentNumberField ValueExpression="() => _hoursSince" Value="@_hoursSince" @oninput="SetSince">
+            <strong>Since (hours)</strong>
+        </FluentNumberField>
+
+        <FluentNumberField ValueExpression="() => _hoursUntil" Value="@_hoursUntil" @oninput="SetUntil">
+            <strong>Until (hours)</strong>
+        </FluentNumberField>
+
+        <Stack Orientation="Orientation.Vertical" VerticalGap="0">
+            <strong>Selected range (@TimeZoneInfo.Local.StandardName)</strong>
+            <span>from @Filter.Since?.ToString("g")</span>
+            <span>to @Filter.Until?.ToString("g")</span>
+        </Stack>
+
+    </Stack>
+
+    <FluentNumberField Min="0" ValueExpression="() => Filter.Limit" Value="@Filter.Limit" @oninput="SetLimit">
+        <strong>Limit</strong>
+    </FluentNumberField>
+
+    <FluentTextArea style="width: 100%" Placeholder="hex or npubs" Resize="TextAreaResize.Vertical" @bind-Value="_authorsText" @bind-Value:after="OnFilterChanged">
+        <strong>Authors</strong>
+    </FluentTextArea>
+
+    <FluentTextArea style="width: 100%" Placeholder="hex or npubs" Resize="TextAreaResize.Vertical" @bind-Value="_idsText" @bind-Value:after="OnFilterChanged">
+        <strong>Ids</strong>
+    </FluentTextArea>
+
+    <FluentTextArea style="width: 100%" Placeholder="hex or npubs in E tag" Resize="TextAreaResize.Vertical" @bind-Value="_eIdsText" @bind-Value:after="OnFilterChanged">
+        <strong>Ids (E)</strong>
+    </FluentTextArea>
+
+    <FluentTextArea style="width: 100%" Placeholder="hex or npubs in P tag" Resize="TextAreaResize.Vertical" @bind-Value="_pIdsText" @bind-Value:after="OnFilterChanged">
+        <strong>Ids (P)</strong>
+    </FluentTextArea>
+
+</Stack>
+
+@code {
+    private bool _isWaitingForData;
+
+    private string? _authorsText;
+    private string? _idsText;
+    private string? _eIdsText;
+    private string? _pIdsText;
+    private int? _hoursSince = -12;
+    private int? _hoursUntil = 4;
+
+
+    [Parameter]
+    [Required]
+    public NostrFilter Filter { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<NostrFilter> FilterChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        OnFilterRestored();
+        OnFilterChanged();
+        base.OnInitialized();
+    }
+
+    public async Task ChangeFilter(NostrFilter filter)
+    {
+        Filter = filter;
+        OnFilterRestored();
+        OnFilterChanged();
+
+        if (FilterChanged.HasDelegate)
+        {
+            await FilterChanged.InvokeAsync(filter);
+        }
+    }
+
+    private void OnFilterRestored()
+    {
+        _authorsText = ConvertTextIdsBack(Filter.Authors);
+        _idsText = ConvertTextIdsBack(Filter.Ids);
+        _eIdsText = ConvertTextIdsBack(Filter.E);
+        _pIdsText = ConvertTextIdsBack(Filter.P);
+    }
+
+    private void OnFilterChanged()
+    {
+        try
+        {
+            Filter.Authors = ConvertTextIds(_authorsText);
+            Filter.Ids = ConvertTextIds(_idsText);
+            Filter.E = ConvertTextIds(_eIdsText);
+            Filter.P = ConvertTextIds(_pIdsText);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to update filter, error: {e.Message}");
+        }
+    }
+
+    private void SetSince(ChangeEventArgs args)
+    {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            _hoursSince = null;
+            Filter.Since = null;
+            return;
+        }
+        _hoursSince = Convert.ToInt32(args.Value);
+        Filter.Since = DateTime.Now.AddHours(_hoursSince.Value);
+    }
+
+    private void SetUntil(ChangeEventArgs args)
+    {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            _hoursUntil = null;
+            Filter.Until = null;
+            return;
+        }
+        _hoursUntil = Convert.ToInt32(args.Value);
+        Filter.Until = DateTime.Now.AddHours(_hoursUntil.Value);
+    }
+
+    private void SetLimit(ChangeEventArgs args)
+    {
+        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
+        {
+            Filter.Limit = null;
+            return;
+        }
+        Filter.Limit = Convert.ToInt32(args.Value);
+    }
+
+    private string ConvertTextIdsBack(string[]? ids)
+    {
+        return string.Join(Environment.NewLine, ids ?? Array.Empty<string>());
+    }
+
+    private string[]? ConvertTextIds(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        return text
+            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(TryConvertBech32)
+            .ToArray();
+    }
+
+    private string TryConvertBech32(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return key;
+        }
+
+        try
+        {
+            return NostrConverter.ToHex(key, out _) ?? key;
+        }
+        catch (Exception e)
+        {
+            return key;
+        }
+    }
+}

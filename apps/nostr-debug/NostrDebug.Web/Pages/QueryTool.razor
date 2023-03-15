@@ -1,149 +1,23 @@
 ﻿@page "/query"
 @using Nostr.Client.Requests
-@using System.Reactive.Linq
-@using Websocket.Client
-@inject RelayConnection NostrRelay
-@implements IDisposable
 
 <Stack Orientation="Orientation.Vertical">
 
     <PageHeader Title="Query Tool" Subtitle="Request data from the connected relay"></PageHeader>
-
-    <Stack Orientation="Orientation.Horizontal" HorizontalGap="20">
         
-        <div class="filter-form">
-            <Stack Orientation="Orientation.Vertical" HorizontalGap="10">
-                
-                <FluentTextField style="width: 100%" Placeholder="" @bind-Value="_subscription">
-                    <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
-                    <strong>Subscription</strong>
-                </FluentTextField>
-                
-                <NostrKindSelect @bind-Value="_filter.Kinds"></NostrKindSelect>
+    <div class="page-layout">
+        
+        <NostrFilterSend Filter="@_filter"></NostrFilterSend>
+        <NostrEventTable></NostrEventTable>
 
-                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
-                    
-                    <FluentNumberField ValueExpression="() => _hoursSince" Value="@_hoursSince" @oninput="SetSince">
-                        <strong>Since (hours)</strong>
-                    </FluentNumberField>
-                
-                    <FluentNumberField ValueExpression="() => _hoursUntil" Value="@_hoursUntil" @oninput="SetUntil">
-                        <strong>Until (hours)</strong>
-                    </FluentNumberField>
-                    
-                    <Stack Orientation="Orientation.Vertical" VerticalGap="0">
-                        <strong>Selected range (@TimeZoneInfo.Local.StandardName)</strong>
-                        <span>from @_filter.Since?.ToString("g")</span>
-                        <span>to @_filter.Until?.ToString("g")</span>
-                    </Stack>
-
-                </Stack>
-
-                <FluentNumberField Min="0" ValueExpression="() => _filter.Limit" Value="@_filter.Limit" @oninput="SetLimit">
-                    <strong>Limit</strong>
-                </FluentNumberField>
-
-                <FluentTextArea style="width: 100%" Placeholder="hex or npubs" Resize="TextAreaResize.Vertical" @bind-Value="_authorsText">
-                    <strong>Authors</strong>
-                </FluentTextArea>
-                
-                <FluentTextArea style="width: 100%" Placeholder="hex or npubs" Resize="TextAreaResize.Vertical" @bind-Value="_idsText">
-                    <strong>Ids</strong>
-                </FluentTextArea>
-                
-                <FluentTextArea style="width: 100%" Placeholder="hex or npubs in E tag" Resize="TextAreaResize.Vertical" @bind-Value="_eIdsText">
-                    <strong>Ids (E)</strong>
-                </FluentTextArea>
-                
-                <FluentTextArea style="width: 100%" Placeholder="hex or npubs in P tag" Resize="TextAreaResize.Vertical" @bind-Value="_pIdsText">
-                    <strong>Ids (P)</strong>
-                </FluentTextArea>
-                
-                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
-                    <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
-                        Send
-                        <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
-                    </FluentButton>
-                    
-                    @if (_isWaitingForData)
-                    {
-                        <FluentProgressRing></FluentProgressRing>
-                    }
-                </Stack>
-                
-                @if (_subscriptions.Any())
-                {
-                    <FluentDivider style="width: 100%"></FluentDivider>
-                    
-                    <div>
-                        <strong>Subscriptions</strong>
-                        <small>(tap to close)</small>
-                        <ul>
-                            @foreach (var sub in _subscriptions)
-                            {
-                                <a class="clear-link cursor-hand" @onclick="() => OnCloseSubscription(sub.Key)">
-                                <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
-                                    <span>@sub.Key</span> @(sub.Value ? "✅" : "❌")
-                                </Stack>
-                            </a>
-                            }
-                        </ul>
-                    </div>
-                }
-
-            </Stack>
-            
-            <div>
-                <FluentDataGrid RowsData="@_events" Pagination="@_pagination" GridTemplateColumns="0.08fr 0.25fr 0.2fr 0.2fr 0.2fr 1fr" RowsDataKey="@(p => p.Id ?? string.Empty)">
-                    <TemplateColumn Class="no-padding">
-                        <FluentButton Appearance="Appearance.Neutral" @onclick="@(() => OnDisplayEvent(context))" style="height: auto">
-                            ...
-                        </FluentButton>
-                    </TemplateColumn>
-                    <TemplateColumn Title="Created" Sortable="true" SortBy="@_sortByDate">
-                        <span>@context.CreatedAt?.ToLocalTime().ToString("T")</span>
-                    </TemplateColumn>
-                    <PropertyColumn Title="Kind" Property="@(p => p.Kind)" Sortable="true"/>
-                    <TemplateColumn Title="Id" Sortable="true">
-                        <span>@context.Id[..4]..@context.Id[^4..]</span>
-                    </TemplateColumn>
-                    <TemplateColumn Title="Author" Sortable="true">
-                        <span>@context.Pubkey[..4]..@context.Pubkey[^4..]</span>
-                    </TemplateColumn>
-                    <PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true"/>
-                </FluentDataGrid>
-                <FluentPaginator Value="@_pagination" />
-
-                <Stack Orientation="Orientation.Horizontal" HorizontalGap="10" HorizontalAlignment="StackHorizontalAlignment.Right" VerticalAlignment="StackVerticalAlignment.Center">
-                    <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearEvents">
-                        Clear
-                        <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
-                    </FluentButton>
-
-                    <span>Page size</span>
-                    <FluentNumberField Min="0" ValueExpression="() => _pagination.ItemsPerPage" Value="@_pagination.ItemsPerPage" @onchange="SetPagination" style="width: 80px">
-                    </FluentNumberField>
-                </Stack>
-                
-                <NostrEventViewDialog @ref="_eventDialog"></NostrEventViewDialog>
-                
-            </div>
-
-        </div>
-
-    </Stack>
+    </div>
 
 </Stack>
 
 @code {
-    private bool _isWaitingForData;
-    private NostrEventViewDialog? _eventDialog;
-
-    private string _subscription = "timeline:something";
-
     private readonly NostrFilter _filter = new()
     {
-        Kinds = new []
+        Kinds = new[]
         {
             NostrKind.Metadata,
             NostrKind.ShortTextNote,
@@ -154,188 +28,14 @@
             NostrKind.Reporting,
             NostrKind.ClientAuthentication
         },
-        Since = DateTime.Now.AddHours(-12),
-        Until = DateTime.Now.AddHours(4),
-        Authors = new []
+            Since = DateTime.Now.AddHours(-12),
+            Until = DateTime.Now.AddHours(4),
+            Authors = new[]
         {
+            "npub1dd668dyr9un9nzf9fjjkpdcqmge584c86gceu7j97nsp4lj2pscs0xk075",
             "npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63q0uf63m",
             "npub1qny3tkh0acurzla8x3zy4nhrjz5zd8l9sy9jys09umwng00manysew95gx",
             "npub1dergggklka99wwrs92yz8wdjs952h2ux2ha2ed598ngwu9w7a6fsh9xzpc"
         }
     };
-
-    private string? _authorsText;
-    private string? _idsText;
-    private string? _eIdsText;
-    private string? _pIdsText;
-    private int? _hoursSince = -12;
-    private int? _hoursUntil = 4;
-
-    private readonly HashSet<NostrEvent> _receivedEvents = new();
-    private IQueryable<NostrEvent> _events = Array.Empty<NostrEvent>().AsQueryable();
-    private readonly PaginationState _pagination = new() { ItemsPerPage = 15 };
-
-    private readonly Dictionary<string, bool> _subscriptions = new();
-
-    private readonly GridSort<NostrEvent> _sortByDate = GridSort<NostrEvent>
-        .ByAscending(p => p.CreatedAt);
-
-    private IDisposable? _websocketDisconnection;
-    private IDisposable? _websocketHandlerEvents;
-    private IDisposable? _websocketHandlerEoes;
-
-    public void Dispose()
-    {
-        _websocketDisconnection?.Dispose();
-        _websocketHandlerEvents?.Dispose();
-        _websocketHandlerEoes?.Dispose();
-    }
-
-    protected override void OnInitialized()
-    {
-        _websocketDisconnection = NostrRelay.Communicator.DisconnectionHappened
-            .Subscribe(HandleDisconnection);
-        
-        _websocketHandlerEvents = NostrRelay.Client.Streams.EventStream
-            .Buffer(TimeSpan.FromSeconds(1))
-            .Subscribe(HandleEvent);
-        
-        _websocketHandlerEoes = NostrRelay.Client.Streams.EoseStream
-            .Subscribe(HandleEose);
-
-        // push default authors into input element
-        _authorsText = string.Join(Environment.NewLine, _filter.Authors ?? Array.Empty<string>());
-
-        base.OnInitialized();
-    }
-
-    private void HandleDisconnection(DisconnectionInfo info)
-    {
-        foreach (var sub in _subscriptions.Keys)
-        {
-            _subscriptions[sub] = false;
-        }
-        StateHasChanged();
-    }
-    
-    private void HandleEvent(IList<NostrEventResponse> response)
-    {
-        var events = response
-            .Where(x => x.Event != null);
-        foreach (var evView in events)
-        {
-            _receivedEvents.Add(evView.Event!);
-            _subscriptions[evView.Subscription ?? string.Empty] = true;
-        }
-        _events = _receivedEvents.AsQueryable();
-        StateHasChanged();
-    }
-
-    private void HandleEose(NostrEoseResponse? response)
-    {
-        if (string.IsNullOrWhiteSpace(response?.Subscription))
-            return;
-
-        _isWaitingForData = false;
-        StateHasChanged();
-    }
-
-    private void OnSend()
-    {
-        _filter.Authors = ConvertTextIds(_authorsText);
-        _filter.Ids = ConvertTextIds(_idsText);
-        _filter.E = ConvertTextIds(_eIdsText);
-        _filter.P = ConvertTextIds(_pIdsText);
-
-        _subscriptions[_subscription] = true;
-        _isWaitingForData = true;
-        NostrRelay.Client.Send(new NostrRequest(_subscription, _filter));
-    }
-
-    private void OnCloseSubscription(string sub)
-    {
-        NostrRelay.Client.Send(new NostrCloseRequest(sub));
-        _subscriptions[sub] = false;
-    }
-
-    private void SetSince(ChangeEventArgs args)
-    {
-        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
-        {
-            _hoursSince = null;
-            _filter.Since = null;
-            return;
-        }
-        _hoursSince = Convert.ToInt32(args.Value);
-        _filter.Since = DateTime.Now.AddHours(_hoursSince.Value);
-    }
-
-    private void SetUntil(ChangeEventArgs args)
-    {
-        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
-        {
-            _hoursUntil = null;
-            _filter.Until = null;
-            return;
-        }
-        _hoursUntil = Convert.ToInt32(args.Value);
-        _filter.Until = DateTime.Now.AddHours(_hoursUntil.Value);
-    }
-
-    private void SetLimit(ChangeEventArgs args)
-    {
-        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
-        {
-            _filter.Limit = null;
-            return;
-        }
-        _filter.Limit = Convert.ToInt32(args.Value);
-    }
-
-    private void SetPagination(ChangeEventArgs args)
-    {
-        if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
-        {
-            return;
-        }
-        _pagination.ItemsPerPage = Convert.ToInt32(args.Value);
-    }
-
-    private string[]? ConvertTextIds(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return null;
-        return text
-            .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
-            .Select(TryConvertBech32)
-            .ToArray();
-    }
-
-    private string TryConvertBech32(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            return key;
-        }
-
-        try
-        {
-            return NostrConverter.ToHex(key, out _) ?? key;
-        }
-        catch (Exception e)
-        {
-            return key;
-        }
-    }
-
-    private void OnDisplayEvent(NostrEvent ev)
-    {
-        _eventDialog?.ShowEvent(ev);
-    }
-
-    private void OnClearEvents()
-    {
-        _receivedEvents.Clear();
-        _events = _receivedEvents.AsQueryable();
-    }
 }

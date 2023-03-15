@@ -130,8 +130,8 @@
     
     <NostrSignatureValidator PublicOrPrivateKey="@_privateOrPublicKey" SignedData="@Event.Id" Signature="@Event.Sig"></NostrSignatureValidator>
     
-    <NostrEventEditJsonDialog @ref="_eventJsonDialog" Applied="OnAppliedEventFromDialog"></NostrEventEditJsonDialog>
-    <NostrDirectEventDialog @ref="_eventDirectDialog" Applied="OnAppliedEventFromDialog" AppliedPrivateKey="OnAppliedPrivateKey"></NostrDirectEventDialog>
+    <NostrEventEditJsonDialog @ref="_eventJsonDialog" Applied="ChangeEvent"></NostrEventEditJsonDialog>
+    <NostrDirectEventDialog @ref="_eventDirectDialog" Applied="ChangeEvent" AppliedPrivateKey="OnAppliedPrivateKey"></NostrDirectEventDialog>
 
 </Stack>
 
@@ -153,7 +153,7 @@
     [Parameter]
     public EventCallback<NostrEvent> EventChanged { get; set; }
 
-    private async Task OnAppliedEventFromDialog(NostrEvent ev)
+    public async Task ChangeEvent(NostrEvent ev)
     {
         Event = ev;
         RestoreTags(Event);

@@ -1,0 +1,131 @@
+﻿@using Nostr.Client.Requests
+@using System.ComponentModel.DataAnnotations
+@using Websocket.Client
+@inject RelayConnection NostrRelay
+@implements IDisposable
+
+<Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
+
+    <NostrFilterEdit @bind-Filter="Filter"></NostrFilterEdit>
+    
+    <FluentTextField style="width: 100%" Placeholder="" @bind-Value="_subscription">
+        <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
+        <strong>Subscription</strong>
+    </FluentTextField>
+
+    <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+        <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
+            Send
+            <FluentIcon Name="@FluentIcons.Send" Slot="end" Size="@IconSize.Size16" Color="Color.Fill" Variant="IconVariant.Filled" />
+        </FluentButton>
+
+        @if (_isWaitingForData)
+        {
+            <FluentProgressRing></FluentProgressRing>
+        }
+    </Stack>
+
+    @if (_subscriptions.Any())
+    {
+        <FluentDivider style="width: 100%"></FluentDivider>
+
+        <div>
+            <strong>Subscriptions</strong>
+            <small>(tap to close)</small>
+            <ul>
+                @foreach (var sub in _subscriptions)
+                {
+                    <a class="clear-link cursor-hand" @onclick="() => OnCloseSubscription(sub.Key)">
+                        <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
+                            <span>@sub.Key</span> @(sub.Value ? "✅" : "❌")
+                        </Stack>
+                    </a>
+                }
+            </ul>
+        </div>
+    }
+
+</Stack>
+
+@code {
+    private string _subscription = "query:data";
+    private bool _isWaitingForData;
+
+    private readonly Dictionary<string, bool> _subscriptions = new();
+
+    private IDisposable? _websocketDisconnection;
+    private IDisposable? _websocketHandlerNoticeData;
+    private IDisposable? _websocketHandlerEoes;
+    private IDisposable? _websocketHandlerEvents;
+
+    [Parameter]
+    [Required]
+    public NostrFilter Filter { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<NostrEvent> FilterChanged { get; set; }
+
+    public void Dispose()
+    {
+        _websocketHandlerNoticeData?.Dispose();
+        _websocketDisconnection?.Dispose();
+        _websocketHandlerEoes?.Dispose();
+        _websocketHandlerEvents?.Dispose();
+    }
+
+    protected override void OnInitialized()
+    {
+        _websocketDisconnection = NostrRelay.Communicator.DisconnectionHappened.Subscribe(HandleDisconnection);
+        _websocketHandlerNoticeData = NostrRelay.Client.Streams.NoticeStream
+            .Subscribe(HandleNotice);
+        _websocketHandlerEoes = NostrRelay.Client.Streams.EoseStream
+            .Subscribe(HandleEose);
+        _websocketHandlerEvents = NostrRelay.Client.Streams.EventStream
+            .Subscribe(HandleEvent);
+
+        base.OnInitialized();
+    }
+
+    private void HandleDisconnection(DisconnectionInfo info)
+    {
+        foreach (var sub in _subscriptions.Keys)
+        {
+            _subscriptions[sub] = false;
+        }
+        StateHasChanged();
+    }
+
+    private void HandleEose(NostrEoseResponse? response)
+    {
+        if (string.IsNullOrWhiteSpace(response?.Subscription))
+            return;
+
+        _isWaitingForData = false;
+        StateHasChanged();
+    }
+
+    private void HandleNotice(NostrNoticeResponse response)
+    {
+        // notice is not bound to any specific filter, stop progress
+        _isWaitingForData = false;
+        StateHasChanged();
+    }
+
+    private void HandleEvent(NostrEventResponse response)
+    {
+        _subscriptions[response.Subscription ?? string.Empty] = true;
+    }
+
+    private void OnCloseSubscription(string sub)
+    {
+        NostrRelay.Client.Send(new NostrCloseRequest(sub));
+        _subscriptions[sub] = false;
+    }
+
+    private void OnSend()
+    {
+        _subscriptions[_subscription] = true;
+        _isWaitingForData = true;
+        NostrRelay.Client.Send(new NostrRequest(_subscription, Filter));
+    }
+}
