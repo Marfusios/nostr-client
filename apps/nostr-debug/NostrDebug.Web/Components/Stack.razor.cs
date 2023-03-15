@@ -2,7 +2,7 @@
 using Microsoft.Fast.Components.FluentUI;
 using Microsoft.Fast.Components.FluentUI.Utilities;
 
-namespace Nostr.Client.Sample.Blazor.Components;
+namespace NostrDebug.Web.Components;
 
 /// <summary>
 /// Determines the horizontal alignment of the content within the <see cref="Stack"/>.

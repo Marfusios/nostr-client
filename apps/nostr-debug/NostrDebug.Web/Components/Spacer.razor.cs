@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 
-namespace Nostr.Client.Sample.Blazor.Components;
+namespace NostrDebug.Web.Components;
 
 public partial class Spacer
 {

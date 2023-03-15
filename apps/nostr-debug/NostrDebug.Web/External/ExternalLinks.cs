@@ -1,6 +1,6 @@
 ﻿using Nostr.Client.Utils;
 
-namespace Nostr.Client.Sample.Blazor.External
+namespace NostrDebug.Web.External
 {
     public class ExternalLinks
     {

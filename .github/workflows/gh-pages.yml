@@ -20,7 +20,7 @@ jobs:
       with:
         dotnet-version: 7.0.x
     - name: Publish with dotnet
-      run: dotnet publish test_integration/Nostr.Client.Sample.Blazor -f net7.0 --configuration Release --output build
+      run: dotnet publish apps/nostr-debug/NostrDebug.Web -f net7.0 --configuration Release --output build
       
     # copy index.html to 404.html to serve the same file when a file is not found
     - name: Copy index.html to 404.html

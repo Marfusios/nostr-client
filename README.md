@@ -100,9 +100,9 @@ relays.ToList().ForEach(relay => relay.Start());
 More usage examples:
 * Tests ([link](tests/Nostr.Client.Tests))
 * Console sample ([link](test_integration/Nostr.Client.Sample.Console/Program.cs))
-* Blazor sample ([link](test_integration/Nostr.Client.Sample.Blazor), [deployed](https://nostrdebug.com))
+* NostrDebug - Blazor app ([link](apps/nostr-debug/NostrDebug.Web), [deployed](https://nostrdebug.com))
 
-![image](https://raw.githubusercontent.com/Marfusios/nostr-client/master/test_integration/Nostr.Client.Sample.Blazor/wwwroot/nostr-preview.png)
+![image](https://raw.githubusercontent.com/Marfusios/nostr-client/master/apps/nostr-debug/NostrDebug.Web/wwwroot/nostr-preview.png)
 
 ### NIP's coverage
 

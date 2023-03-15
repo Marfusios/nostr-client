@@ -1,9 +1,9 @@
-using Nostr.Client.Sample.Blazor;
+using NostrDebug.Web;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Fast.Components.FluentUI;
-using Nostr.Client.Sample.Blazor.Relay;
-using Nostr.Client.Sample.Blazor.Events;
+using NostrDebug.Web.Relay;
+using NostrDebug.Web.Events;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

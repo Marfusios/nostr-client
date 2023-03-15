@@ -6,7 +6,7 @@ using Nostr.Client.Communicator;
 using Websocket.Client;
 using Websocket.Client.Models;
 
-namespace Nostr.Client.Sample.Blazor.Relay
+namespace NostrDebug.Web.Relay
 {
     public class RelayConnection : IDisposable
     {

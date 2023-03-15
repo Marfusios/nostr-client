@@ -3,24 +3,26 @@
 <FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
     <div class="content">
         
-        <FluentTextArea style="width: 100%" Placeholder="text" Resize="TextAreaResize.Vertical" @bind-Value="_content">
-            <strong>Content</strong>
-        </FluentTextArea>
+        <Stack Orientation="Orientation.Vertical" VerticalGap="10">
+            <FluentTextArea style="width: 100%" Placeholder="text" Resize="TextAreaResize.Vertical" @bind-Value="_content">
+                <strong>Content</strong>
+            </FluentTextArea>
         
-        <FluentTextField Style="width: 100%" Placeholder="npub1xxx or hex" @bind-Value="_receiverKeyStr">
-            <FluentIcon Name="@FluentIcons.Person" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
-            <strong>Receiver (public key)</strong>
-        </FluentTextField>
-
-        <Stack Orientation="Orientation.Horizontal" HorizontalGap="10">
-            <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" @bind-Value="_senderKeyStr">
-                <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
-                <strong>Sender (private key)</strong>
+            <FluentTextField Style="width: 100%" Placeholder="npub1xxx or hex" @bind-Value="_receiverKeyStr">
+                <FluentIcon Name="@FluentIcons.Person" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+                <strong>Receiver (public key)</strong>
             </FluentTextField>
 
-            <FluentButton Appearance="Appearance.Neutral" @onclick="OnGeneratePrivateKey" title="Generate a new private key" style="align-self: end">
-                <FluentIcon Name="@FluentIcons.SquareAdd" Size="@IconSize.Size16" Color="Color.Neutral" />
-            </FluentButton>
+            <Stack Orientation="Orientation.Horizontal" HorizontalGap="10">
+                <FluentTextField Style="width: 100%" Placeholder="nsec1xxx or hex" @bind-Value="_senderKeyStr">
+                    <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral"/>
+                    <strong>Sender (private key)</strong>
+                </FluentTextField>
+
+                <FluentButton Appearance="Appearance.Neutral" @onclick="OnGeneratePrivateKey" title="Generate a new private key" style="align-self: end">
+                    <FluentIcon Name="@FluentIcons.SquareAdd" Size="@IconSize.Size16" Color="Color.Neutral" />
+                </FluentButton>
+            </Stack>
         </Stack>
 
         <div class="buttons">

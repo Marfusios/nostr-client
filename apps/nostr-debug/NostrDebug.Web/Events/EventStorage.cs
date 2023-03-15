@@ -1,7 +1,7 @@
 ﻿using Nostr.Client.Messages;
 using Nostr.Client.Responses;
 
-namespace Nostr.Client.Sample.Blazor.Events
+namespace NostrDebug.Web.Events
 {
     public class EventStorage
     {
