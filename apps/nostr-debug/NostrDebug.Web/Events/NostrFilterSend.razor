@@ -6,7 +6,7 @@
 
 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
 
-    <NostrFilterEdit @bind-Filter="Filter"></NostrFilterEdit>
+    <NostrFilterEdit @bind-Filter="Filter" @bind-Filter:after="OnFilterChanged"></NostrFilterEdit>
     
     <FluentTextField style="width: 100%" Placeholder="" @bind-Value="_subscription">
         <FluentIcon Name="@FluentIcons.PanelLeftKey" Slot="start" Size="@IconSize.Size16" Color=Color.Neutral Variant="IconVariant.Filled" />
@@ -63,7 +63,7 @@
     public NostrFilter Filter { get; set; } = new();
 
     [Parameter]
-    public EventCallback<NostrEvent> FilterChanged { get; set; }
+    public EventCallback<NostrFilter> FilterChanged { get; set; }
 
     public void Dispose()
     {
@@ -84,6 +84,14 @@
             .Subscribe(HandleEvent);
 
         base.OnInitialized();
+    }
+
+    private async Task OnFilterChanged()
+    {
+        if (FilterChanged.HasDelegate)
+        {
+            await FilterChanged.InvokeAsync(Filter);
+        }
     }
 
     private void HandleDisconnection(DisconnectionInfo info)

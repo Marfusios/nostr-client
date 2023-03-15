@@ -2,8 +2,17 @@
 @using Nostr.Client.Requests
 
 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="10">
+    
+    <FluentToolbar Style="padding: 0">
 
-    <NostrKindSelect @bind-Value="Filter.Kinds"></NostrKindSelect>
+        <FluentButton @onclick="OnJsonEdit" Style="margin-left: 0">
+            <FluentIcon Name="@FluentIcons.WindowDevEdit" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
+            JSON edit
+        </FluentButton>
+
+    </FluentToolbar>
+
+    <NostrKindSelect @bind-Value="Filter.Kinds" @bind-Value:after="OnFilterChanged"></NostrKindSelect>
 
     <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
 
@@ -17,8 +26,8 @@
 
         <Stack Orientation="Orientation.Vertical" VerticalGap="0">
             <strong>Selected range (@TimeZoneInfo.Local.StandardName)</strong>
-            <span>from @Filter.Since?.ToString("g")</span>
-            <span>to @Filter.Until?.ToString("g")</span>
+            <span>from @Filter.Since?.ToLocalTime().ToString("g")</span>
+            <span>to @Filter.Until?.ToLocalTime().ToString("g")</span>
         </Stack>
 
     </Stack>
@@ -42,6 +51,8 @@
     <FluentTextArea style="width: 100%" Placeholder="hex or npubs in P tag" Resize="TextAreaResize.Vertical" @bind-Value="_pIdsText" @bind-Value:after="OnFilterChanged">
         <strong>Ids (P)</strong>
     </FluentTextArea>
+    
+    <NostrFilterEditJsonDialog @ref="_filterJsonDialog" Applied="ChangeFilter"></NostrFilterEditJsonDialog>
 
 </Stack>
 
@@ -52,9 +63,10 @@
     private string? _idsText;
     private string? _eIdsText;
     private string? _pIdsText;
-    private int? _hoursSince = -12;
-    private int? _hoursUntil = 4;
+    private int? _hoursSince;
+    private int? _hoursUntil;
 
+    private NostrFilterEditJsonDialog? _filterJsonDialog;
 
     [Parameter]
     [Required]
@@ -63,23 +75,18 @@
     [Parameter]
     public EventCallback<NostrFilter> FilterChanged { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         OnFilterRestored();
-        OnFilterChanged();
-        base.OnInitialized();
+        await OnFilterChanged();
+        await base.OnInitializedAsync();
     }
 
     public async Task ChangeFilter(NostrFilter filter)
     {
         Filter = filter;
         OnFilterRestored();
-        OnFilterChanged();
-
-        if (FilterChanged.HasDelegate)
-        {
-            await FilterChanged.InvokeAsync(filter);
-        }
+        await OnFilterChanged();
     }
 
     private void OnFilterRestored()
@@ -88,9 +95,19 @@
         _idsText = ConvertTextIdsBack(Filter.Ids);
         _eIdsText = ConvertTextIdsBack(Filter.E);
         _pIdsText = ConvertTextIdsBack(Filter.P);
+
+        if (Filter.Since.HasValue)
+            _hoursSince = (int)Filter.Since.Value.Subtract(DateTimeUtils.UtcNowOnlyHours()).TotalHours;
+        else
+            _hoursSince = null;
+
+        if (Filter.Until.HasValue)
+            _hoursUntil = (int)Filter.Until.Value.Subtract(DateTimeUtils.UtcNowOnlyHours()).TotalHours;
+        else
+            _hoursUntil = null;
     }
 
-    private void OnFilterChanged()
+    private async Task OnFilterChanged()
     {
         try
         {
@@ -98,6 +115,11 @@
             Filter.Ids = ConvertTextIds(_idsText);
             Filter.E = ConvertTextIds(_eIdsText);
             Filter.P = ConvertTextIds(_pIdsText);
+
+            if (FilterChanged.HasDelegate)
+            {
+                await FilterChanged.InvokeAsync(Filter);
+            }
         }
         catch (Exception e)
         {
@@ -105,7 +127,7 @@
         }
     }
 
-    private void SetSince(ChangeEventArgs args)
+    private async Task SetSince(ChangeEventArgs args)
     {
         if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
         {
@@ -114,10 +136,11 @@
             return;
         }
         _hoursSince = Convert.ToInt32(args.Value);
-        Filter.Since = DateTime.Now.AddHours(_hoursSince.Value);
+        Filter.Since = DateTimeUtils.UtcNowOnlyHours().AddHours(_hoursSince.Value);
+        await OnFilterChanged();
     }
 
-    private void SetUntil(ChangeEventArgs args)
+    private async Task SetUntil(ChangeEventArgs args)
     {
         if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
         {
@@ -126,10 +149,12 @@
             return;
         }
         _hoursUntil = Convert.ToInt32(args.Value);
-        Filter.Until = DateTime.Now.AddHours(_hoursUntil.Value);
+        Filter.Until = DateTimeUtils.UtcNowOnlyHours().AddHours(_hoursUntil.Value).ToUniversalTime();
+        await OnFilterChanged();
+        Console.WriteLine("Set until " + Filter.Until);
     }
 
-    private void SetLimit(ChangeEventArgs args)
+    private async Task SetLimit(ChangeEventArgs args)
     {
         if (args.Value == null || string.IsNullOrWhiteSpace(args.Value as string))
         {
@@ -137,6 +162,7 @@
             return;
         }
         Filter.Limit = Convert.ToInt32(args.Value);
+        await OnFilterChanged();
     }
 
     private string ConvertTextIdsBack(string[]? ids)
@@ -169,5 +195,12 @@
         {
             return key;
         }
+    }
+
+    private async Task OnJsonEdit()
+    {
+        if (_filterJsonDialog == null)
+            return;
+        await _filterJsonDialog.ShowFilter(Filter);
     }
 }

@@ -1,8 +1,9 @@
 ﻿@using Newtonsoft.Json
 @using Nostr.Client.Json
 @using BlazorMonaco.Editor;
+@using Nostr.Client.Requests
 
-<FluentDialog @ref="_eventDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
+<FluentDialog @ref="_dialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
     <div class="content">
         
         <StandaloneCodeEditor @ref="_editor" ConstructionOptions="GetInitOptions"></StandaloneCodeEditor>
@@ -19,7 +20,7 @@
 </FluentDialog>
 
 @code {
-    private FluentDialog? _eventDialog;
+    private FluentDialog? _dialog;
     private StandaloneCodeEditor? _editor;
     private string? _data;
     private string? _error;
@@ -27,28 +28,17 @@
     private readonly string _themeName = "vs";
 
     [Parameter]
-    public EventCallback<NostrEvent> Applied { get; set; }
+    public EventCallback<NostrFilter> Applied { get; set; }
 
-    public async Task ShowEvent(NostrEvent? ev)
+    public async Task ShowFilter(NostrFilter? filter)
     {
-        if (ev == null)
-        {
-            _data = Serialize(new NostrEvent
-            {
-                Kind = NostrKind.ShortTextNote,
-                CreatedAt = DateTime.Now
-            });
-        }
-        else
-        {
-            _data = Serialize(ev);
-        }
+        _data = Serialize(filter ?? new NostrFilter());
 
         if (_editor != null)
         {
             await _editor.SetValue(_data);
         }
-        _eventDialog?.Show();
+        _dialog?.Show();
     }
 
     protected override async Task OnInitializedAsync()
@@ -61,7 +51,7 @@
     {
         if (firstRender)
         {
-            _eventDialog!.Hide();
+            _dialog!.Hide();
         }
     }
 
@@ -73,7 +63,7 @@
     private void OnDiscard()
     {
         _error = null;
-        _eventDialog?.Hide();
+        _dialog?.Hide();
     }
 
     private async Task OnApply()
@@ -81,7 +71,7 @@
         try
         {
             var data = await _editor!.GetValue();
-            var deserialized = JsonConvert.DeserializeObject<NostrEvent>(data, NostrSerializer.Settings);
+            var deserialized = JsonConvert.DeserializeObject<NostrFilter>(data, NostrSerializer.Settings);
             if (deserialized == null)
             {
                 _error = "Deserialized to null";
@@ -90,7 +80,7 @@
 
             _error = null;
             await Applied.InvokeAsync(deserialized);
-            _eventDialog?.Hide();
+            _dialog?.Hide();
         }
         catch (Exception e)
         {
@@ -113,7 +103,7 @@
         };
     }
 
-    private static string Serialize(NostrEvent ev)
+    private static string Serialize(NostrFilter ev)
     {
         var settings = NostrSerializer.Settings;
         settings.NullValueHandling = NullValueHandling.Include;

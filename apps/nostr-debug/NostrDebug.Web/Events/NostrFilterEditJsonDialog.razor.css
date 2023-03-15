@@ -1,0 +1,31 @@
+﻿::deep .monaco-editor-container {
+    width: 100%;
+    height: 400px;
+}
+
+::deep .monaco-editor-background {
+    background-color: #fbfbfb;
+}
+
+::deep .monaco-editor .margin {
+    background-color: #fbfbfb;
+}
+
+::deep .decorationsOverviewRuler {
+    background-color: #fbfbfb;
+}
+
+.content {
+    padding: 0;
+    margin-left: calc(var(--design-unit) * 6px);
+    margin-right: calc(var(--design-unit) * 6px);
+    margin-top: calc(var(--design-unit) * 6px);
+}
+
+.buttons {
+    padding-top: 10px;
+}
+
+.error-message {
+    color: var(--error);
+}

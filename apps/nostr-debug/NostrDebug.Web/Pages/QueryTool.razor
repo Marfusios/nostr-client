@@ -1,5 +1,9 @@
 ﻿@page "/query"
 @using Nostr.Client.Requests
+@using Newtonsoft.Json
+@using Nostr.Client.Json
+@using System.Text
+@inject NavigationManager Navigation
 
 <Stack Orientation="Orientation.Vertical">
 
@@ -7,7 +11,7 @@
         
     <div class="page-layout">
         
-        <NostrFilterSend Filter="@_filter"></NostrFilterSend>
+        <NostrFilterSend @bind-Filter="_filter" @bind-Filter:after="OnFilterChanged"></NostrFilterSend>
         <NostrEventTable></NostrEventTable>
 
     </div>
@@ -15,7 +19,7 @@
 </Stack>
 
 @code {
-    private readonly NostrFilter _filter = new()
+    private NostrFilter _filter = new()
     {
         Kinds = new[]
         {
@@ -28,8 +32,8 @@
             NostrKind.Reporting,
             NostrKind.ClientAuthentication
         },
-            Since = DateTime.Now.AddHours(-12),
-            Until = DateTime.Now.AddHours(4),
+            Since = DateTimeUtils.UtcNowOnlyHours().AddHours(-12),
+            Until = DateTimeUtils.UtcNowOnlyHours().AddHours(4),
             Authors = new[]
         {
             "npub1dd668dyr9un9nzf9fjjkpdcqmge584c86gceu7j97nsp4lj2pscs0xk075",
@@ -38,4 +42,55 @@
             "npub1dergggklka99wwrs92yz8wdjs952h2ux2ha2ed598ngwu9w7a6fsh9xzpc"
         }
     };
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "base64")]
+    public string? QueryBase64 { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrWhiteSpace(QueryBase64))
+        {
+            SerializeFilterToUrl();
+            return;
+        }
+
+        var deserialized = DeserializeFilter(QueryBase64);
+        if (deserialized != null)
+            _filter = deserialized;
+    }
+
+    private void OnFilterChanged()
+    {
+        SerializeFilterToUrl();
+    }
+
+    private void SerializeFilterToUrl()
+    {
+        var serialized = SerializeFilter(_filter);
+        var newUrl = Navigation.GetUriWithQueryParameter("base64", serialized);
+        Navigation.NavigateTo(newUrl);
+    }
+
+    private static string SerializeFilter(NostrFilter filter)
+    {
+        var serialized = JsonConvert.SerializeObject(filter, NostrSerializer.Settings);
+        var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(serialized));
+        return base64;
+    }
+
+    private static NostrFilter? DeserializeFilter(string filter)
+    {
+        try
+        {
+            var filterSerialized = Encoding.UTF8.GetString(Convert.FromBase64String(filter));
+            var deserialized = JsonConvert.DeserializeObject<NostrFilter>(filterSerialized, NostrSerializer.Settings);
+            return deserialized;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to deserialize filter, error: {e.Message}");
+            return null;
+        }
+    }
 }

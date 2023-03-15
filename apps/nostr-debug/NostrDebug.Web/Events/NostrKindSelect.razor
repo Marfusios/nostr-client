@@ -53,6 +53,17 @@
         base.OnInitialized();
     }
 
+    protected override void OnParametersSet()
+    {
+        if (Value != _selectedKinds)
+        {
+            _selectedKinds = Value ?? Array.Empty<NostrKind>();
+            UpdateSelectedText();
+        }
+
+        base.OnParametersSet();
+    }
+
     private async Task OnDisplay()
     {
         _displayKindSelector = !_displayKindSelector;
