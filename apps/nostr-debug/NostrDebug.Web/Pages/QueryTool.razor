@@ -4,10 +4,13 @@
 @using Nostr.Client.Json
 @using System.Text
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <Stack Orientation="Orientation.Vertical">
+    
+    <PageTitle>@_pageTitle</PageTitle>
 
-    <PageHeader Title="Query Tool" Subtitle="Request data from the connected relay"></PageHeader>
+    <PageHeader Title="Query Tool" Subtitle="Request data from the connected relay" DisplayBrowserTitle="false"></PageHeader>
         
     <div class="page-layout">
         
@@ -24,13 +27,7 @@
         Kinds = new[]
         {
             NostrKind.Metadata,
-            NostrKind.ShortTextNote,
-            NostrKind.Reaction,
-            NostrKind.Contacts,
-            NostrKind.RecommendRelay,
-            NostrKind.EventDeletion,
-            NostrKind.Reporting,
-            NostrKind.ClientAuthentication
+            NostrKind.ShortTextNote
         },
             Since = DateTimeUtils.UtcNowOnlyHours().AddHours(-12),
             Until = DateTimeUtils.UtcNowOnlyHours().AddHours(4),
@@ -43,21 +40,48 @@
         }
     };
 
+    private string? _appliedQueryBase64;
+    private string _pageTitle = "Query Tool";
+
     [Parameter]
     [SupplyParameterFromQuery(Name = "base64")]
     public string? QueryBase64 { get; set; }
 
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
     protected override void OnInitialized()
     {
+        Navigation.LocationChanged += OnLocationChanged;
+
         if (string.IsNullOrWhiteSpace(QueryBase64))
         {
-            SerializeFilterToUrl(true);
+            SerializeFilterToUrl(false);
             return;
         }
 
         var deserialized = DeserializeFilter(QueryBase64);
         if (deserialized != null)
             _filter = deserialized;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (QueryBase64 == _appliedQueryBase64)
+        {
+            // query param wasn't changed from outside, do nothing
+            return;
+        }
+
+        var deserialized = DeserializeFilter(QueryBase64);
+        if (deserialized == null) 
+            return;
+
+        _filter = deserialized;
+        _appliedQueryBase64 = QueryBase64;
+        StateHasChanged();
     }
 
     private void OnFilterChanged()
@@ -68,8 +92,38 @@
     private void SerializeFilterToUrl(bool replace)
     {
         var serialized = SerializeFilter(_filter);
-        var newUrl = Navigation.GetUriWithQueryParameter("base64", serialized);
+        if (serialized == _appliedQueryBase64)
+        {
+            // query param was changed from outside, do nothing
+            return;
+        }
+
+        _appliedQueryBase64 = serialized;
+        _pageTitle = "Query" +
+                           $"{NonNull("k", _filter.Kinds)}" +
+                           $"{NonNull("l", _filter.Limit)}" +
+                           $"{NonNull("a", _filter.Authors)}" +
+                           $"{NonNull("i", _filter.Ids)}" +
+                           $"{NonNull("e", _filter.E)}" +
+                           $"{NonNull("p", _filter.P)}";
+        var newUrl = Navigation.GetUriWithQueryParameter("base64", _appliedQueryBase64);
         Navigation.NavigateTo(newUrl, false, replace);
+    }
+
+    private static string NonNull<T>(string label, T? item)
+    {
+        if (item == null)
+            return string.Empty;
+
+        return $" {label}:{item}";
+    }
+
+    private static string NonNull<T>(string label, T[]? items)
+    {
+        if (items == null || !items.Any())
+            return string.Empty;
+
+        return $" {label}:{items.Length}";
     }
 
     private static string SerializeFilter(NostrFilter filter)
@@ -79,8 +133,11 @@
         return base64;
     }
 
-    private static NostrFilter? DeserializeFilter(string filter)
+    private static NostrFilter? DeserializeFilter(string? filter)
     {
+        if (filter == null)
+            return null;
+
         try
         {
             var filterSerialized = Encoding.UTF8.GetString(Convert.FromBase64String(filter));

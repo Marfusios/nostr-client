@@ -78,6 +78,7 @@
     protected override async Task OnInitializedAsync()
     {
         OnFilterRestored();
+        ConvertTextIds();
         await base.OnInitializedAsync();
     }
 
@@ -110,10 +111,7 @@
     {
         try
         {
-            Filter.Authors = ConvertTextIds(_authorsText);
-            Filter.Ids = ConvertTextIds(_idsText);
-            Filter.E = ConvertTextIds(_eIdsText);
-            Filter.P = ConvertTextIds(_pIdsText);
+            ConvertTextIds();
 
             if (FilterChanged.HasDelegate)
             {
@@ -124,6 +122,14 @@
         {
             Console.WriteLine($"Failed to update filter, error: {e.Message}");
         }
+    }
+
+    private void ConvertTextIds()
+    {
+        Filter.Authors = ConvertTextIds(_authorsText);
+        Filter.Ids = ConvertTextIds(_idsText);
+        Filter.E = ConvertTextIds(_eIdsText);
+        Filter.P = ConvertTextIds(_pIdsText);
     }
 
     private async Task SetSince(ChangeEventArgs args)

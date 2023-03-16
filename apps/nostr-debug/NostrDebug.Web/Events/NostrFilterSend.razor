@@ -121,7 +121,12 @@
 
     private void HandleEvent(NostrEventResponse response)
     {
-        _subscriptions[response.Subscription ?? string.Empty] = true;
+        var sub = response.Subscription ?? string.Empty;
+        if (!_subscriptions.ContainsKey(sub) || !_subscriptions[sub])
+        {
+            _subscriptions[sub] = true;
+            StateHasChanged();
+        }
     }
 
     private void OnCloseSubscription(string sub)

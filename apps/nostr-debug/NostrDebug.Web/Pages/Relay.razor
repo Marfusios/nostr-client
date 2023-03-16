@@ -37,7 +37,7 @@
 
     <div>
         <div>
-            <pre>Received messages: @_receivedMessagesCount</pre>
+            <pre>Received messages: @NostrRelay.ReceivedMessagesCount</pre>
         </div>
         
         <h4>History</h4>
@@ -58,8 +58,6 @@
     private string _selectedRelayUrl = string.Empty;
     private readonly List<string> _history = new();
 
-    private int _receivedMessagesCount;
-
     protected override void OnInitialized()
     {
         _selectedRelayUrl = NostrRelay.RelayUrl;
@@ -67,7 +65,6 @@
         NostrRelay.HistoryStream.Subscribe(OnHistory);
         NostrRelay.Communicator.MessageReceived.Subscribe(_ =>
         {
-            _receivedMessagesCount++;
             StateHasChanged();
         });
 
@@ -76,7 +73,6 @@
 
     private async Task OnConnect()
     {
-        _receivedMessagesCount = 0;
         _selectedRelayUrl = _selectedRelayUrl.Replace(" ", string.Empty).Trim();
         await NostrRelay.Connect(_selectedRelayUrl);
     }

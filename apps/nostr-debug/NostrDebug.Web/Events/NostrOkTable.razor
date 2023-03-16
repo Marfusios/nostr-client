@@ -4,10 +4,11 @@
 
 <div>
 
-    <FluentDataGrid RowsData="@_receivedData.AsQueryable()" Pagination="@_pagination" GridTemplateColumns="0.3fr 0.3fr 0.2fr 1fr">
+    <FluentDataGrid RowsData="@_receivedData.AsQueryable()" Pagination="@_pagination" GridTemplateColumns="0.4fr 0.4fr 0.2fr 0.2fr 1fr">
         <TemplateColumn Title="Received" Sortable="true" SortBy="@_sortByDate" IsDefaultSort="SortDirection.Ascending">
             <span>@context.ReceivedTimestamp.ToLocalTime().ToString("T")</span>
         </TemplateColumn>
+        <PropertyColumn Title="Relay" Property="@(p => p.Relay)" Sortable="true" />
         <TemplateColumn Title="Event" Sortable="true">
             @if (context.EventId != null)
             {
@@ -24,7 +25,7 @@
                 <span>⚠️</span>
             }
         </TemplateColumn>
-        <PropertyColumn Title="Message" Property="@(p => p.Message)" Sortable="true" />
+        <PropertyColumn Title="Message" Property="@(p => p.Message)" Sortable="true"/>
     </FluentDataGrid>
     <FluentPaginator Value="@_pagination" />
 
@@ -73,6 +74,7 @@
     private void HandleOk(NostrOkResponse response)
     {
         var converted = new ItemModel(
+            response.CommunicatorName,
             response.ReceivedTimestamp,
             response.EventId,
             response.Accepted,
@@ -86,6 +88,7 @@
     private void HandleNotice(NostrNoticeResponse response)
     {
         var converted = new ItemModel(
+            response.CommunicatorName,
             response.ReceivedTimestamp,
             null,
             null,
@@ -122,6 +125,6 @@
         _eventDialog?.ShowEvent(found);
     }
 
-    private record ItemModel(DateTime ReceivedTimestamp, string? EventId, bool? Accepted, string? Message);
+    private record ItemModel(string Relay, DateTime ReceivedTimestamp, string? EventId, bool? Accepted, string? Message);
 
 }

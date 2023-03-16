@@ -1,4 +1,5 @@
-﻿using System.Net.WebSockets;
+﻿using System;
+using System.Net.WebSockets;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Nostr.Client.Client;
@@ -34,12 +35,13 @@ namespace NostrDebug.Web.Relay
             var url = new Uri(DefaultRelays.First());
             _communicator = new NostrWebsocketCommunicator(url);
 
-            _communicator.Name = $"Relay-{url.Host}";
+            _communicator.Name = url.Host;
             _communicator.ReconnectTimeout = null; //TimeSpan.FromSeconds(30);
             _communicator.ErrorReconnectTimeout = TimeSpan.FromSeconds(60);
 
             _communicator.ReconnectionHappened.Subscribe(OnReconnected);
             _communicator.DisconnectionHappened.Subscribe(OnDisconnected);
+            _communicator.MessageReceived.Subscribe(OnMessageReceived);
 
             _client = new NostrWebsocketClient(_communicator, loggerClient);
         }
@@ -53,6 +55,8 @@ namespace NostrDebug.Web.Relay
         public bool IsConnected => _communicator.IsRunning;
 
         public string RelayUrl => _communicator.Url.ToString().TrimEnd('/');
+
+        public int ReceivedMessagesCount { get; private set; }
 
         public IObservable<string> HistoryStream => _historySubject.AsObservable();
         public IObservable<bool> ConnectionStream => _connectionSubject.AsObservable();
@@ -75,7 +79,9 @@ namespace NostrDebug.Web.Relay
                 return false;
             }
 
+            ReceivedMessagesCount = 0;
             _communicator.Url = safeUrl;
+            _communicator.Name = safeUrl.Host;
             await _communicator.Start();
             return true;
         }
@@ -83,6 +89,11 @@ namespace NostrDebug.Web.Relay
         public async Task Disconnect()
         {
             await _communicator.Stop(WebSocketCloseStatus.NormalClosure, string.Empty);
+        }
+
+        private void OnMessageReceived(ResponseMessage message)
+        {
+            ReceivedMessagesCount++;
         }
 
         private void OnReconnected(ReconnectionInfo info)
