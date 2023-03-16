@@ -14,7 +14,7 @@
         
     <div class="page-layout">
         
-        <NostrFilterSend @bind-Filter="_filter" @bind-Filter:after="OnFilterChanged"></NostrFilterSend>
+        <NostrFilterSend @bind-Filter="_filter" FilterSent="OnFilterChanged"></NostrFilterSend>
         <NostrEventTable></NostrEventTable>
 
     </div>
@@ -58,7 +58,6 @@
 
         if (string.IsNullOrWhiteSpace(QueryBase64))
         {
-            SerializeFilterToUrl(false);
             return;
         }
 

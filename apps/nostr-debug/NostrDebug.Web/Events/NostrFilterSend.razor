@@ -65,6 +65,9 @@
     [Parameter]
     public EventCallback<NostrFilter> FilterChanged { get; set; }
 
+    [Parameter]
+    public EventCallback<NostrFilter> FilterSent { get; set; }
+
     public void Dispose()
     {
         _websocketHandlerNoticeData?.Dispose();
@@ -135,10 +138,15 @@
         _subscriptions[sub] = false;
     }
 
-    private void OnSend()
+    private async Task OnSend()
     {
         _subscriptions[_subscription] = true;
         _isWaitingForData = true;
         NostrRelay.Client.Send(new NostrRequest(_subscription, Filter));
+
+        if (FilterSent.HasDelegate)
+        {
+            await FilterSent.InvokeAsync(Filter);
+        }
     }
 }
