@@ -25,7 +25,6 @@ This library keeps a reliable connection to get real-time data and fast executio
 #### Receiving events
 
 ```csharp
-var exitEvent = new ManualResetEvent(false);
 var url = new Uri("wss://relay.damus.io");
 
 using var communicator = new NostrWebsocketCommunicator(url);
@@ -42,8 +41,6 @@ client.Streams.EventStream.Subscribe(response =>
 });
 
 await communicator.Start();
-
-exitEvent.WaitOne(TimeSpan.FromSeconds(30));
 ```
 
 #### Sending event
