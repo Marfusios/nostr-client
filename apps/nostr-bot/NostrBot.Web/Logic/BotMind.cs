@@ -227,7 +227,7 @@ namespace NostrBot.Web.Logic
             }
 
             var prompts = new List<ChatPromptTimed>();
-            var maxSize = 3000;
+            var maxSize = 2000;
             var currentSize = 0;
 
             var orderedBackward = historicalEvents
