@@ -39,8 +39,11 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartRelay.Api", "apps\smart-relay\SmartRelay.Api\SmartRelay.Api.csproj", "{8E680046-F2BE-4DAD-BD0B-6C8FC5B2CD66}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nostr-bot", "nostr-bot", "{F6B8A906-5362-4719-8C23-A0FA37692DE8}"
+	ProjectSection(SolutionItems) = preProject
+		apps\nostr-bot\README.md = apps\nostr-bot\README.md
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NostrBot.Web", "apps\nostr-bot\NostrBot.Web\NostrBot.Web.csproj", "{72226286-B0AD-49D7-8933-16E9A1276DD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NostrBot.Web", "apps\nostr-bot\NostrBot.Web\NostrBot.Web.csproj", "{72226286-B0AD-49D7-8933-16E9A1276DD3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
