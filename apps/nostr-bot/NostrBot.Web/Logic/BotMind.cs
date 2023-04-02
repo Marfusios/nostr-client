@@ -21,13 +21,15 @@ namespace NostrBot.Web.Logic
         private readonly NostrEventsQueue _eventsQueue;
         private readonly OpenAIClient _openAi;
         private readonly BotStorage _storage;
+        private readonly BotManagement _management;
 
         public BotMind(IOptions<NostrConfig> nostrConfig, IOptions<BotConfig> config,
-            NostrMultiWebsocketClient client, NostrEventsQueue eventsQueue, OpenAIClient openAi, BotStorage storage)
+            NostrMultiWebsocketClient client, NostrEventsQueue eventsQueue, OpenAIClient openAi, BotStorage storage, BotManagement management)
         {
             _eventsQueue = eventsQueue;
             _openAi = openAi;
             _storage = storage;
+            _management = management;
             _nostrConfig = nostrConfig.Value;
             _config = config.Value;
             _client = client;
@@ -117,24 +119,38 @@ namespace NostrBot.Web.Logic
             var botKey = NostrPrivateKey.FromBech32(_nostrConfig.PrivateKey);
             var decryptedMessage = dm.DecryptContent(botKey);
 
+            var receiver = NostrPublicKey.FromHex(dm.Pubkey ?? throw new InvalidOperationException("DM pubkey is null"));
+
+
+            if (_management.IsCommand(decryptedMessage))
+            {
+                Log.Debug("[{relay}] Received dm command, content: {message}, processing...", response.CommunicatorName, decryptedMessage);
+                var comment = await _management.ProcessCommand(decryptedMessage, dm.Pubkey);
+                SendDirectMessage(comment, botKey, receiver);
+                await _storage.Store("command", response, dm, comment, decryptedMessage, null);
+                return;
+            }
+
             Log.Debug("[{relay}] Received dm, message: {message}, generating AI reply...", response.CommunicatorName, decryptedMessage);
 
             var contextId = GenerateContextId(dm);
             var aiReply = await RequestAiReply(response, contextId, null, decryptedMessage);
 
-            var receiver = NostrPublicKey.FromHex(dm.Pubkey ?? throw new InvalidOperationException("DM pubkey is null"));
+            SendDirectMessage(aiReply, botKey, receiver);
+            await _storage.Store(contextId, response, dm, aiReply, decryptedMessage, null);
+        }
+
+        private void SendDirectMessage(string message, NostrPrivateKey sender, NostrPublicKey receiver)
+        {
             var replyDm = new NostrEvent
             {
                 Kind = NostrKind.EncryptedDm,
                 CreatedAt = DateTime.UtcNow,
-                Content = aiReply
+                Content = message
             };
-            var encrypted = replyDm.EncryptDirect(botKey, receiver);
-            var signed = encrypted.Sign(botKey);
-
+            var encrypted = replyDm.EncryptDirect(sender, receiver);
+            var signed = encrypted.Sign(sender);
             _client.Send(new NostrEventRequest(signed));
-
-            await _storage.Store(contextId, response, dm, aiReply, decryptedMessage, null);
         }
 
         private async Task<string> RequestAiReply(NostrEventResponse response, string contextId, string? secondaryContextId, string? userMessage)

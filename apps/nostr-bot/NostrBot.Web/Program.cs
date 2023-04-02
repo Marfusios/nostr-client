@@ -48,6 +48,7 @@ namespace NostrBot.Web
 
                 services.AddSingleton<NostrMultiWebsocketClient>();
                 services.AddSingleton<NostrListener>();
+                services.AddSingleton<BotManagement>();
 
                 services.AddSingleton(_ => new NostrEventsQueue(
                     Channel.CreateUnbounded<NostrEventResponse>(new UnboundedChannelOptions
