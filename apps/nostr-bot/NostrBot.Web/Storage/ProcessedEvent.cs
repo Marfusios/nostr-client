@@ -28,6 +28,8 @@ namespace NostrBot.Web.Storage
 
         public string ReplyContextId { get; set; } = null!;
 
+        public string? ReplySecondaryContextId { get; set; }
+
         public string? GeneratedReply { get; set; }
     }
 }

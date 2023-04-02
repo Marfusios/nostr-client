@@ -5,6 +5,7 @@ using Nostr.Client.Requests;
 using Nostr.Client.Responses;
 using NostrBot.Web.Configs;
 using NostrBot.Web.Logic;
+using Serilog;
 
 namespace NostrBot.Web
 {
@@ -25,7 +26,11 @@ namespace NostrBot.Web
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
+            Log.Information("Starting Nostr Bot");
+
             var botPubKey = NostrPrivateKey.FromBech32(_nostrConfig.PrivateKey).DerivePublicKey();
+            Log.Information("Bot public key: {BotPubKey}", botPubKey.Bech32);
+
             _listener.RegisterFilter(new NostrFilter
             {
                 Kinds = new[]
@@ -40,6 +45,7 @@ namespace NostrBot.Web
 
             _listener.Start();
 
+            Log.Information("Nostr Bot listening...");
             return Task.CompletedTask;
         }
 

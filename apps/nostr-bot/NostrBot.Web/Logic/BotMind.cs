@@ -90,8 +90,9 @@ namespace NostrBot.Web.Logic
 
             Log.Debug("[{relay}] Received mention, message: {message}, generating AI reply...", response.CommunicatorName, message);
 
-            var contextId = GenerateContextId(ev);
-            var aiReply = await RequestAiReply(response, contextId, message);
+            var contextId = GenerateContextIdForPubkey(ev);
+            var secondaryContextId = GenerateContextIdForReplyOrRoot(ev);
+            var aiReply = await RequestAiReply(response, contextId, secondaryContextId, message);
 
             var replyEvent = new NostrEvent
             {
@@ -106,7 +107,9 @@ namespace NostrBot.Web.Logic
 
             var signed = replyEvent.Sign(botKey);
             _client.Send(new NostrEventRequest(signed));
-            await _storage.Store(contextId, response, ev, aiReply, message);
+
+            var newSecondaryContextId = GenerateContextIdForRoot(signed);
+            await _storage.Store(contextId, response, ev, aiReply, message, newSecondaryContextId);
         }
 
         private async Task OnDirectMessage(NostrEventResponse response, NostrEncryptedDirectEvent dm)
@@ -117,7 +120,7 @@ namespace NostrBot.Web.Logic
             Log.Debug("[{relay}] Received dm, message: {message}, generating AI reply...", response.CommunicatorName, decryptedMessage);
 
             var contextId = GenerateContextId(dm);
-            var aiReply = await RequestAiReply(response, contextId, decryptedMessage);
+            var aiReply = await RequestAiReply(response, contextId, null, decryptedMessage);
 
             var receiver = NostrPublicKey.FromHex(dm.Pubkey ?? throw new InvalidOperationException("DM pubkey is null"));
             var replyDm = new NostrEvent
@@ -131,15 +134,15 @@ namespace NostrBot.Web.Logic
 
             _client.Send(new NostrEventRequest(signed));
 
-            await _storage.Store(contextId, response, dm, aiReply, decryptedMessage);
+            await _storage.Store(contextId, response, dm, aiReply, decryptedMessage, null);
         }
 
-        private async Task<string> RequestAiReply(NostrEventResponse response, string contextId, string? userMessage)
+        private async Task<string> RequestAiReply(NostrEventResponse response, string contextId, string? secondaryContextId, string? userMessage)
         {
             var chatPrompts = new List<ChatPrompt>();
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
-            chatPrompts.AddRange(await IncludeHistory(contextId));
+            chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId));
             chatPrompts.Add(new ChatPrompt("user", userMessage));
 
             var chatRequest = new ChatRequest(chatPrompts);
@@ -152,9 +155,20 @@ namespace NostrBot.Web.Logic
             return aiReply;
         }
 
-        private string GenerateContextId(NostrEvent ev)
+        private string GenerateContextIdForPubkey(NostrEvent ev)
         {
             return $"mention-from-{ev.Pubkey}";
+        }
+
+        private string GenerateContextIdForReplyOrRoot(NostrEvent ev)
+        {
+            var fromTag = ev.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier);
+            return $"mention-id-{fromTag ?? ev.Id}";
+        }
+
+        private string GenerateContextIdForRoot(NostrEvent ev)
+        {
+            return $"mention-id-{ev.Id}";
         }
 
         private string GenerateContextId(NostrEncryptedDirectEvent dm)
@@ -188,9 +202,9 @@ namespace NostrBot.Web.Logic
             };
         }
 
-        private async Task<IEnumerable<ChatPrompt>> IncludeHistory(string contextId)
+        private async Task<IEnumerable<ChatPrompt>> IncludeHistory(string contextId, string? secondaryContextId)
         {
-            var historicalEvents = await _storage.GetHistoryForContext(contextId);
+            var historicalEvents = await _storage.GetHistoryForContext(contextId, secondaryContextId);
             if (!historicalEvents.Any())
             {
                 return Array.Empty<ChatPrompt>();

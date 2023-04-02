@@ -21,7 +21,7 @@ namespace NostrBot.Web.Storage
                 .AnyAsync(x => x.NostrEventId == ev.Id);
         }
 
-        public async Task Store(string contextId, NostrEventResponse response, NostrEvent ev, string? generatedReply, string? eventContent)
+        public async Task Store(string contextId, NostrEventResponse response, NostrEvent ev, string? generatedReply, string? eventContent, string? secondaryContextId)
         {
             using var _ = ResolveContext(out var context);
 
@@ -38,6 +38,7 @@ namespace NostrBot.Web.Storage
                 NostrEventTagP = ev.Tags?.FindFirstTagValue(NostrEventTag.ProfileIdentifier),
                 NostrEventTagE = ev.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier),
                 ReplyContextId = contextId,
+                ReplySecondaryContextId = secondaryContextId,
                 GeneratedReply = generatedReply
             };
 
@@ -45,11 +46,11 @@ namespace NostrBot.Web.Storage
             await context.SaveChangesAsync();
         }
 
-        public async Task<ProcessedEvent[]> GetHistoryForContext(string contextId)
+        public async Task<ProcessedEvent[]> GetHistoryForContext(string contextId, string? secondaryContextId)
         {
             using var _ = ResolveContext(out var context);
             return await context.ProcessedEvents
-                .Where(x => x.ReplyContextId == contextId)
+                .Where(x => x.ReplyContextId == contextId || x.ReplySecondaryContextId == secondaryContextId)
                 .OrderByDescending(x => x.Created)
                 .ToArrayAsync();
         }

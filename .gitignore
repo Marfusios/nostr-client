@@ -215,4 +215,9 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 
+*.db
+*.db-shm
+*.db-wal
+
 appsettings.Production.json
+appsettings.Production2.json
