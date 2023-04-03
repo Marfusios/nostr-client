@@ -29,7 +29,7 @@ namespace NostrBot.Web
             Log.Information("Starting Nostr Bot");
 
             var botPubKey = NostrPrivateKey.FromBech32(_nostrConfig.PrivateKey).DerivePublicKey();
-            Log.Information("Bot public key: {BotPubKey}", botPubKey.Bech32);
+            Log.Information("Bot public key: {pubkey}", botPubKey.Bech32);
 
             _listener.RegisterFilter(new NostrFilter
             {

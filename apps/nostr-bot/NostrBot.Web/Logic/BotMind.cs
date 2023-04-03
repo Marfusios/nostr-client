@@ -37,6 +37,9 @@ namespace NostrBot.Web.Logic
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            Log.Information("Bot description: {description}", _config.BotDescription);
+            Log.Information("Bot whois: {description}", _config.BotWhois);
+
             try
             {
                 await foreach (var response in _eventsQueue.Reader.ReadAllAsync(stoppingToken))
@@ -121,7 +124,6 @@ namespace NostrBot.Web.Logic
 
             var receiver = NostrPublicKey.FromHex(dm.Pubkey ?? throw new InvalidOperationException("DM pubkey is null"));
 
-
             if (_management.IsCommand(decryptedMessage))
             {
                 Log.Debug("[{relay}] Received dm command, content: {message}, processing...", response.CommunicatorName, decryptedMessage);
@@ -133,7 +135,7 @@ namespace NostrBot.Web.Logic
 
             Log.Debug("[{relay}] Received dm, message: {message}, generating AI reply...", response.CommunicatorName, decryptedMessage);
 
-            var contextId = GenerateContextId(dm);
+            var contextId = GenerateContextIdForPubkey(dm);
             var aiReply = await RequestAiReply(response, contextId, null, decryptedMessage);
 
             SendDirectMessage(aiReply, botKey, receiver);
@@ -159,7 +161,7 @@ namespace NostrBot.Web.Logic
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
             chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId));
-            chatPrompts.Add(new ChatPrompt("user", userMessage));
+            chatPrompts.Add(new ChatPrompt("user", $"{response.Event?.Pubkey}: {userMessage}"));
 
             var chatRequest = new ChatRequest(chatPrompts);
             var result = await _openAi.ChatEndpoint.GetCompletionAsync(chatRequest);
@@ -171,9 +173,14 @@ namespace NostrBot.Web.Logic
             return aiReply;
         }
 
+        private string GenerateContextIdForPubkey(string? pubkey)
+        {
+            return $"mention-from-{pubkey}";
+        }
+
         private string GenerateContextIdForPubkey(NostrEvent ev)
         {
-            return $"mention-from-{ev.Pubkey}";
+            return GenerateContextIdForPubkey(ev.Pubkey);
         }
 
         private string GenerateContextIdForReplyOrRoot(NostrEvent ev)
@@ -185,11 +192,6 @@ namespace NostrBot.Web.Logic
         private string GenerateContextIdForRoot(NostrEvent ev)
         {
             return $"mention-id-{ev.Id}";
-        }
-
-        private string GenerateContextId(NostrEncryptedDirectEvent dm)
-        {
-            return $"dm-{dm.Pubkey}";
         }
 
         private IEnumerable<ChatPrompt> IncludeBotDescription()
@@ -213,17 +215,22 @@ namespace NostrBot.Web.Logic
 
             return new[]
             {
-                new ChatPrompt("user", "Who are you?"),
+                new ChatPrompt("user", "unknown: Who are you?"),
                 new ChatPrompt("assistant", _config.BotWhois)
             };
         }
 
         private async Task<IEnumerable<ChatPrompt>> IncludeHistory(string contextId, string? secondaryContextId)
         {
-            var historicalEvents = await _storage.GetHistoryForContext(contextId, secondaryContextId);
+            var historicalEvents = (await _storage.GetHistoryForContext(contextId, secondaryContextId)).ToList();
             if (!historicalEvents.Any())
             {
                 return Array.Empty<ChatPrompt>();
+            }
+
+            foreach (var historicalEvent in historicalEvents.ToArray())
+            {
+                await LoadAdditionalHistory(historicalEvent, historicalEvents);
             }
 
             var prompts = new List<ChatPromptTimed>();
@@ -231,13 +238,14 @@ namespace NostrBot.Web.Logic
             var currentSize = 0;
 
             var orderedBackward = historicalEvents
+                .DistinctBy(x => x.NostrEventId)
                 .OrderByDescending(x => x.NostrEventCreatedAt ?? x.Created)
                 .ToArray();
 
             foreach (var ev in orderedBackward)
             {
                 var timestamp = ev.NostrEventCreatedAt ?? ev.Created;
-                var request = ev.NostrEventContent ?? string.Empty;
+                var request = $"{ev.NostrEventPubkey}: {ev.NostrEventContent}";
                 var reply = ev.GeneratedReply ?? string.Empty;
 
                 prompts.Add(new ChatPromptTimed(timestamp, new ChatPrompt("user", request)));
@@ -256,6 +264,15 @@ namespace NostrBot.Web.Logic
                 .Select(x => x.Prompt)
                 .ToArray();
             return orderedPrompts;
+        }
+
+        private async Task LoadAdditionalHistory(ProcessedEvent ev, List<ProcessedEvent> events)
+        {
+            var context = GenerateContextIdForPubkey(ev.NostrEventPubkey);
+            events.AddRange(await _storage.GetHistoryForContext(context, null));
+
+            var contextRef = GenerateContextIdForPubkey(ev.NostrEventTagP);
+            events.AddRange(await _storage.GetHistoryForContext(contextRef, null));
         }
 
         private int CountTextTokens(string text)

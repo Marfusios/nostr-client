@@ -50,7 +50,7 @@ namespace NostrBot.Web.Storage
         {
             using var _ = ResolveContext(out var context);
             return await context.ProcessedEvents
-                .Where(x => x.ReplyContextId == contextId || x.ReplySecondaryContextId == secondaryContextId)
+                .Where(x => x.ReplyContextId == contextId || (x.ReplySecondaryContextId != null && x.ReplySecondaryContextId == secondaryContextId))
                 .OrderByDescending(x => x.Created)
                 .ToArrayAsync();
         }

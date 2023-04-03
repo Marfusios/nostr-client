@@ -65,7 +65,8 @@ namespace NostrBot.Web.Logic
             {
                 Kinds = new[]
                 {
-                    NostrKind.ShortTextNote
+                    NostrKind.ShortTextNote,
+                    NostrKind.EncryptedDm
                 },
                 Ids = new[] { targetEventId }
             };
