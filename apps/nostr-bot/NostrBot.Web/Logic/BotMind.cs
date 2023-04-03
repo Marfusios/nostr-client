@@ -6,6 +6,7 @@ using Nostr.Client.Messages;
 using Nostr.Client.Messages.Direct;
 using Nostr.Client.Requests;
 using Nostr.Client.Responses;
+using Nostr.Client.Utils;
 using NostrBot.Web.Storage;
 using OpenAI;
 using Serilog;
@@ -161,7 +162,7 @@ namespace NostrBot.Web.Logic
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
             chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId));
-            chatPrompts.Add(new ChatPrompt("user", $"{response.Event?.Pubkey}: {userMessage}"));
+            chatPrompts.Add(new ChatPrompt("user", $"@{ToNpub(response.Event?.Pubkey)}: {userMessage}"));
 
             CircuitBreaker(chatPrompts);
 
@@ -263,7 +264,7 @@ namespace NostrBot.Web.Logic
             foreach (var ev in orderedBackward)
             {
                 var timestamp = ev.NostrEventCreatedAt ?? ev.Created;
-                var request = $"{ev.NostrEventPubkey}: {ev.NostrEventContent}";
+                var request = $"@{ToNpub(ev.NostrEventPubkey)}: {ev.NostrEventContent}";
                 var reply = ev.GeneratedReply ?? string.Empty;
 
                 prompts.Add(new ChatPromptTimed(timestamp, new ChatPrompt("user", request)));
@@ -296,6 +297,22 @@ namespace NostrBot.Web.Logic
         private int CountTextTokens(string text)
         {
             return text.Count(x => x == ' ');
+        }
+
+        private string ToNpub(string? hex)
+        {
+            if (string.IsNullOrWhiteSpace(hex))
+                return string.Empty;
+            try
+            {
+                return NostrConverter.ToNpub(hex) ?? string.Empty;
+            }
+            catch (Exception e)
+            {
+                // ignore
+            }
+
+            return hex;
         }
 
         private record ChatPromptTimed(DateTime Timestamp, ChatPrompt Prompt);
