@@ -163,6 +163,8 @@ namespace NostrBot.Web.Logic
             chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId));
             chatPrompts.Add(new ChatPrompt("user", $"{response.Event?.Pubkey}: {userMessage}"));
 
+            CircuitBreaker(chatPrompts);
+
             var chatRequest = new ChatRequest(chatPrompts);
             var result = await _openAi.ChatEndpoint.GetCompletionAsync(chatRequest);
 
@@ -171,6 +173,22 @@ namespace NostrBot.Web.Logic
             Log.Debug("[{relay}] AI reply to message: {message}, reply: {reply}", response.CommunicatorName, userMessage,
                 aiReply);
             return aiReply;
+        }
+
+        private void CircuitBreaker(List<ChatPrompt> chatPrompts)
+        {
+            var text = string.Join(Environment.NewLine, chatPrompts.Select(x => x.Content)).ToLowerInvariant();
+            var textWords = text.Split(" ");
+            var breakWords = new[] { "take care", "farewell", "goodbye" };
+            foreach (var word in breakWords)
+            {
+                var occurred = textWords.Count(x => x == word);
+                if (occurred > 10)
+                {
+                    Log.Debug("Circuit breaker triggered, word {word} occurred {occurred} times", word, occurred);
+                    throw new InvalidOperationException("Circuit breaker triggered");
+                }
+            }
         }
 
         private string GenerateContextIdForPubkey(string? pubkey)
