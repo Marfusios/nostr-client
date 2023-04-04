@@ -106,6 +106,7 @@ namespace Nostr.Client.Tests.Fakes
 
         public void StreamFakeMessage(ResponseMessage message)
         {
+            _messageSubject.OnNext(message);
         }
 
         public Uri Url { get; set; } = new("wss://fake.local");
