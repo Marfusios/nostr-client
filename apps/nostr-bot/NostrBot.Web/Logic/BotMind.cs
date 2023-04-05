@@ -122,6 +122,12 @@ namespace NostrBot.Web.Logic
                 return false;
             }
 
+            if (!GlobalSubscription.Equals(response.Subscription, StringComparison.OrdinalIgnoreCase))
+            {
+                // process non-global stuff
+                return false;
+            }
+            
             var contentSafe = (response.Event?.Content ?? string.Empty)
                 .ToLowerInvariant()
                 .Split(" ");
