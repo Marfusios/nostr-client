@@ -27,6 +27,9 @@ namespace NostrBot.Web.Logic
         private readonly BotStorage _storage;
         private readonly BotManagement _management;
 
+        private readonly NostrPrivateKey _botPrivateKey;
+        private readonly NostrPublicKey _botPublicKey;
+
         public BotMind(IOptions<NostrConfig> nostrConfig, IOptions<BotConfig> config,
             NostrMultiWebsocketClient client, NostrEventsQueue eventsQueue, OpenAIClient openAi, BotStorage storage, BotManagement management)
         {
@@ -37,6 +40,9 @@ namespace NostrBot.Web.Logic
             _nostrConfig = nostrConfig.Value;
             _config = config.Value;
             _client = client;
+            
+            _botPrivateKey = NostrPrivateKey.FromBech32(_nostrConfig.PrivateKey);
+            _botPublicKey = _botPrivateKey.DerivePublicKey();
         }
 
         public bool ListenToGlobalFeed => _config.ListenToGlobalFeed && _config.GlobalFeedKeywords.Any();
@@ -129,15 +135,16 @@ namespace NostrBot.Web.Logic
             var secondaryContextId = GenerateContextIdForReplyOrRoot(ev);
             var aiReply = await RequestAiReply(response, contextId, secondaryContextId, message);
 
+            var processedMessage = ExtractMentionsSafely(aiReply, out NostrEventTags tags);
+            tags.Add(new NostrEventTag("e", ev.Id ?? string.Empty));
+            tags.Add(new NostrEventTag("p", ev.Pubkey ?? string.Empty));
+            
             var replyEvent = new NostrEvent
             {
                 Kind = ev.Kind,
                 CreatedAt = DateTime.UtcNow,
-                Content = aiReply,
-                Tags = new NostrEventTags(
-                    new NostrEventTag("e", ev.Id ?? string.Empty),
-                    new NostrEventTag("p", ev.Pubkey ?? string.Empty)
-                    )
+                Content = processedMessage,
+                Tags = tags
             };
 
             var signed = replyEvent.Sign(botKey);
@@ -149,8 +156,7 @@ namespace NostrBot.Web.Logic
 
         private async Task OnDirectMessage(NostrEventResponse response, NostrEncryptedDirectEvent dm)
         {
-            var botKey = NostrPrivateKey.FromBech32(_nostrConfig.PrivateKey);
-            var decryptedMessage = dm.DecryptContent(botKey);
+            var decryptedMessage = dm.DecryptContent(_botPrivateKey);
 
             var receiver = NostrPublicKey.FromHex(dm.Pubkey ?? throw new InvalidOperationException("DM pubkey is null"));
 
@@ -158,7 +164,7 @@ namespace NostrBot.Web.Logic
             {
                 Log.Debug("[{relay}] Received dm command, content: {message}, processing...", response.CommunicatorName, decryptedMessage);
                 var comment = await _management.ProcessCommand(decryptedMessage, dm.Pubkey);
-                SendDirectMessage(comment, botKey, receiver);
+                SendDirectMessage(comment, _botPrivateKey, receiver);
                 await _storage.Store("command", response, dm, comment, decryptedMessage, null);
                 return;
             }
@@ -168,7 +174,7 @@ namespace NostrBot.Web.Logic
             var contextId = GenerateContextIdForPubkey(dm);
             var aiReply = await RequestAiReply(response, contextId, null, decryptedMessage);
 
-            SendDirectMessage(aiReply, botKey, receiver);
+            SendDirectMessage(aiReply, _botPrivateKey, receiver);
             await _storage.Store(contextId, response, dm, aiReply, decryptedMessage, null);
         }
 
@@ -185,13 +191,16 @@ namespace NostrBot.Web.Logic
             _client.Send(new NostrEventRequest(signed));
         }
 
-        private async Task<string> RequestAiReply(NostrEventResponse response, string contextId, string? secondaryContextId, string? userMessage)
+        private async Task<string> RequestAiReply(NostrEventResponse response, string contextId, 
+            string? secondaryContextId, string? userMessage)
         {
+            var userMessageProcessed = ApplyMentionsSafely(userMessage, response.Event?.Tags);
+            
             var chatPrompts = new List<ChatPrompt>();
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
             chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId));
-            chatPrompts.Add(new ChatPrompt("user", $"@{ToNpub(response.Event?.Pubkey)}: {userMessage}"));
+            chatPrompts.Add(new ChatPrompt("user", $"@{ToNpub(response.Event?.Pubkey)}: {userMessageProcessed}"));
 
             CircuitBreaker(chatPrompts);
 
@@ -247,9 +256,11 @@ namespace NostrBot.Web.Logic
             {
                 return Array.Empty<ChatPrompt>();
             }
+
+            var description = $"{_config.BotDescription} Your identification is {_botPublicKey.Bech32}";
             return new[]
             {
-                new ChatPrompt("system", _config.BotDescription)
+                new ChatPrompt("system", description)
             };
         }
 
@@ -341,6 +352,101 @@ namespace NostrBot.Web.Logic
             }
 
             return hex;
+        }
+        
+        private string? ApplyMentionsSafely(string? message, NostrEventTags? tags)
+        {
+            if (tags == null || !tags.Any())
+                return message;
+            
+            try
+            {
+                return ApplyMentions(message, tags);
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "Failed to apply mentions to message: {message}, error: {error}",
+                    message, e.Message);
+                return message;
+            }
+        }
+        
+        private string? ApplyMentions(string? message, NostrEventTags tags)
+        {
+            var profileTags = tags
+                .Where(x => x.TagIdentifier == NostrEventTag.ProfileIdentifier)
+                .ToArray();
+            if (string.IsNullOrWhiteSpace(message))
+                return message;
+            var split = message.Split(" ");
+            for (int i = 0; i < split.Length; i++)
+            {
+                var word = split[i];
+                if(string.IsNullOrWhiteSpace(word) || !word.StartsWith("#[") || !word.EndsWith("]"))
+                    continue;
+                var indexStr = word.TrimStart('#').TrimStart('[').TrimEnd(']');
+                if(!int.TryParse(indexStr, out int index))
+                    continue;
+                if(profileTags.Length < index)
+                    continue;
+                var hex = profileTags[index].AdditionalData.FirstOrDefault() as string;
+                var npub = ToNpub(hex);
+                split[i] = $"@{npub}";
+            }
+            return string.Join(" ", split);
+        }
+        
+        private string? ExtractMentionsSafely(string? message, out NostrEventTags tags)
+        {
+            try
+            {
+                return ExtractMentions(message, out tags);
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "Failed to extract mentions from message: {message}, error: {error}",
+                    message, e.Message);
+                tags = new NostrEventTags();
+                return message;
+            }
+        }
+        
+        private string? ExtractMentions(string? message, out NostrEventTags tags)
+        {
+            tags = new NostrEventTags();
+            if (string.IsNullOrWhiteSpace(message))
+                return message;
+            var split = message.Split(" ");
+            var npubCounter = 0;
+            for (int i = 0; i < split.Length; i++)
+            {
+                var word = split[i];
+                if(string.IsNullOrWhiteSpace(word))
+                    continue;
+                var wordTrimmed = word
+                    .Trim('.')
+                    .Trim(',')
+                    .Trim(';')
+                    .Trim('\'')
+                    .Trim('"')
+                    .Trim('(')
+                    .Trim(')')
+                    .Trim('[')
+                    .Trim(']')
+                    .Trim('{')
+                    .Trim('}')
+                    .Trim(',')
+                    .Trim(';')
+                    .Trim('.')
+                    .Trim('@');
+                if (!wordTrimmed.StartsWith("npub1"))
+                    continue;
+                var pubKey = NostrPublicKey.FromBech32(wordTrimmed);
+                split[i] = $"#[{npubCounter}]";
+                tags.Add(new NostrEventTag(NostrEventTag.ProfileIdentifier, pubKey.Hex));
+                npubCounter++;
+            }
+            return string.Join(" ", split);
         }
 
         private record ChatPromptTimed(DateTime Timestamp, ChatPrompt Prompt);
