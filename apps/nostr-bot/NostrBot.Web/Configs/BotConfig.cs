@@ -8,6 +8,8 @@
 
         public string[] BotAdminPubKeys { get; init; } = Array.Empty<string>();
         
+        public string[] BotIgnoreListPubKeys { get; init; } = Array.Empty<string>();
+        
         public bool ListenToGlobalFeed { get; init; }
 
         public string[] GlobalFeedKeywords { get; init; } = Array.Empty<string>();

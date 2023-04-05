@@ -104,9 +104,15 @@ namespace NostrBot.Web.Logic
 
         private bool ShouldIgnore(NostrEventResponse response)
         {
-            if (response.Event?.Pubkey == _botPublicKey.Hex)
+            var authorPubKey = ToNpub(response.Event?.Pubkey);
+            if (authorPubKey == _botPublicKey.Bech32)
             {
                 // ignore events from this bot
+                return true;
+            }
+
+            if (_config.BotIgnoreListPubKeys.Contains(authorPubKey))
+            {
                 return true;
             }
             
