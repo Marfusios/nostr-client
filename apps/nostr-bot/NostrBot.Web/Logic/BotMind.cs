@@ -104,6 +104,12 @@ namespace NostrBot.Web.Logic
 
         private bool ShouldIgnore(NostrEventResponse response)
         {
+            if (response.Event?.Pubkey == _botPublicKey.Hex)
+            {
+                // ignore events from this bot
+                return true;
+            }
+            
             if (MentionSubscription.Equals(response.Subscription, StringComparison.OrdinalIgnoreCase))
             {
                 // always process mentions
