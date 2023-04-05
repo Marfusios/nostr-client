@@ -16,6 +16,9 @@ namespace NostrBot.Web.Logic
 {
     public class BotMind : BackgroundService
     {
+        public const string MentionSubscription = "bot:mentions";
+        public const string GlobalSubscription = "bot:global";
+        
         private readonly NostrConfig _nostrConfig;
         private readonly BotConfig _config;
         private readonly NostrMultiWebsocketClient _client;
@@ -35,6 +38,8 @@ namespace NostrBot.Web.Logic
             _config = config.Value;
             _client = client;
         }
+
+        public bool ListenToGlobalFeed => _config.ListenToGlobalFeed && _config.GlobalFeedKeywords.Any();
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -73,9 +78,12 @@ namespace NostrBot.Web.Logic
             if (response.Event == null)
                 return;
 
+            if (ShouldIgnore(response))
+                return;
+            
             if (await _storage.IsProcessed(response.Event))
             {
-                Log.Debug("[{relay}] Received event is already processed, content: {content}", response.CommunicatorName, response.Event.Content);
+                Log.Verbose("[{relay}] Received event is already processed, content: {content}", response.CommunicatorName, response.Event.Content);
                 return;
             }
 
@@ -86,6 +94,27 @@ namespace NostrBot.Web.Logic
             }
 
             await OnMention(response);
+        }
+
+        private bool ShouldIgnore(NostrEventResponse response)
+        {
+            if (MentionSubscription.Equals(response.Subscription, StringComparison.OrdinalIgnoreCase))
+            {
+                // always process mentions
+                return false;
+            }
+
+            var contentSafe = (response.Event?.Content ?? string.Empty)
+                .ToLowerInvariant()
+                .Split(" ");
+            foreach (var keyword in _config.GlobalFeedKeywords)
+            {
+                var keywordSafe = (keyword ?? string.Empty).ToLowerInvariant();
+                if (contentSafe.Contains(keywordSafe))
+                    return false;
+            }
+
+            return true;
         }
 
         private async Task OnMention(NostrEventResponse response)
@@ -171,8 +200,7 @@ namespace NostrBot.Web.Logic
 
             var aiReply = string.Join(Environment.NewLine, result.Choices.Select(x => x.Message.Content));
 
-            Log.Debug("[{relay}] AI reply to message: {message}, reply: {reply}", response.CommunicatorName, userMessage,
-                aiReply);
+            Log.Debug("[{relay}] AI reply: {reply}", response.CommunicatorName, aiReply);
             return aiReply;
         }
 
@@ -307,7 +335,7 @@ namespace NostrBot.Web.Logic
             {
                 return NostrConverter.ToNpub(hex) ?? string.Empty;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // ignore
             }

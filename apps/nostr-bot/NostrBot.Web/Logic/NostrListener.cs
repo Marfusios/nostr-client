@@ -15,7 +15,7 @@ public class NostrListener : IDisposable
     private readonly NostrMultiWebsocketClient _client;
     private readonly INostrCommunicator[] _communicators;
 
-    private readonly List<NostrFilter> _filters = new();
+    private readonly Dictionary<string, NostrFilter> _subscriptionToFilter = new();
 
     public NostrListener(IOptions<NostrConfig> config, NostrMultiWebsocketClient client)
     {
@@ -39,9 +39,9 @@ public class NostrListener : IDisposable
         }
     }
 
-    public void RegisterFilter(NostrFilter filter)
+    public void RegisterFilter(string subscription, NostrFilter filter)
     {
-        _filters.Add(filter);
+        _subscriptionToFilter[subscription] = filter;
     }
 
     public void Start()
@@ -90,7 +90,7 @@ public class NostrListener : IDisposable
     {
         try
         {
-            Log.Information("[{relay}] Reconnected, sending Nostr filters ({filterCount})", communicatorName, _filters.Count);
+            Log.Information("[{relay}] Reconnected, sending Nostr filters ({filterCount})", communicatorName, _subscriptionToFilter.Count);
 
             var client = _client.FindClient(communicatorName);
             if (client == null)
@@ -99,11 +99,9 @@ public class NostrListener : IDisposable
                 return;
             }
 
-            var counter = 0;
-            foreach (var filter in _filters)
+            foreach (var (sub, filter) in _subscriptionToFilter)
             {
-                client.Send(new NostrRequest($"bot:data:{counter}", filter));
-                counter++;
+                client.Send(new NostrRequest(sub, filter));
             }
         }
         catch (Exception e)

@@ -7,5 +7,9 @@
         public string? BotWhois { get; init; }
 
         public string[] BotAdminPubKeys { get; init; } = Array.Empty<string>();
+        
+        public bool ListenToGlobalFeed { get; init; }
+
+        public string[] GlobalFeedKeywords { get; init; } = Array.Empty<string>();
     }
 }

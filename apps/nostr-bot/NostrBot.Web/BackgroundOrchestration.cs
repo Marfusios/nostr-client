@@ -14,13 +14,16 @@ namespace NostrBot.Web
         private readonly NostrConfig _nostrConfig;
         private readonly NostrListener _listener;
         private readonly NostrEventsQueue _eventsQueue;
+        private readonly BotMind _botMind;
 
         private IDisposable? _eventsSub;
 
-        public BackgroundOrchestration(IOptions<NostrConfig> nostrConfig, NostrListener listener, NostrEventsQueue eventsQueue)
+        public BackgroundOrchestration(IOptions<NostrConfig> nostrConfig, NostrListener listener, 
+            NostrEventsQueue eventsQueue, BotMind botMind)
         {
             _listener = listener;
             _eventsQueue = eventsQueue;
+            _botMind = botMind;
             _nostrConfig = nostrConfig.Value;
         }
 
@@ -31,7 +34,7 @@ namespace NostrBot.Web
             var botPubKey = NostrPrivateKey.FromBech32(_nostrConfig.PrivateKey).DerivePublicKey();
             Log.Information("Bot public key: {pubkey}", botPubKey.Bech32);
 
-            _listener.RegisterFilter(new NostrFilter
+            _listener.RegisterFilter(BotMind.MentionSubscription, new NostrFilter
             {
                 Kinds = new[]
                 {
@@ -40,6 +43,18 @@ namespace NostrBot.Web
                 },
                 P = new[] { botPubKey.Hex }
             });
+
+            if (_botMind.ListenToGlobalFeed)
+            {
+                _listener.RegisterFilter(BotMind.GlobalSubscription, new NostrFilter
+                {
+                    Kinds = new[]
+                    {
+                        NostrKind.ShortTextNote
+                    },
+                    Limit = 0
+                });
+            }
 
             _eventsSub = _listener.Streams.EventStream.Subscribe(OnEvent);
 
