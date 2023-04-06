@@ -12,6 +12,10 @@
         
         public bool ListenToGlobalFeed { get; init; }
 
+		public bool ReactToRootEventsInGlobalFeed { get; init; }
+        
+        public bool ReactToThreadsInGlobalFeed { get; init; }
+
         public string[] GlobalFeedKeywords { get; init; } = Array.Empty<string>();
     }
 }

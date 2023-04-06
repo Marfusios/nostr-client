@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Diagnostics.Tracing;
+using Microsoft.Extensions.Options;
 using Nostr.Client.Client;
 using NostrBot.Web.Configs;
 using Nostr.Client.Keys;
@@ -118,7 +119,7 @@ namespace NostrBot.Web.Logic
             
             if (MentionSubscription.Equals(response.Subscription, StringComparison.OrdinalIgnoreCase))
             {
-                // always process mentions
+                // always process direct mentions
                 return false;
             }
 
@@ -126,6 +127,19 @@ namespace NostrBot.Web.Logic
             {
                 // process non-global stuff
                 return false;
+            }
+
+            var isRoot = response.Event?.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier) == null;
+            if (isRoot && !_config.ReactToRootEventsInGlobalFeed)
+            {
+                // ignore root events
+                return true;
+            }
+
+            if (!isRoot && !_config.ReactToThreadsInGlobalFeed)
+            {
+                // ignore events in threads
+                return true;
             }
             
             var contentSafe = (response.Event?.Content ?? string.Empty)
