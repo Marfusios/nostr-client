@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Tracing;
+﻿using System.Reactive.Linq;
 using Microsoft.Extensions.Options;
 using Nostr.Client.Client;
 using NostrBot.Web.Configs;
@@ -19,6 +19,7 @@ namespace NostrBot.Web.Logic
     {
         public const string MentionSubscription = "bot:mentions";
         public const string GlobalSubscription = "bot:global";
+        public const string AdhocDataCollectionSubscription = "bot:adhoc";
         
         private readonly NostrConfig _nostrConfig;
         private readonly BotConfig _config;
@@ -105,6 +106,13 @@ namespace NostrBot.Web.Logic
 
         private bool ShouldIgnore(NostrEventResponse response)
         {
+            var subscription = response.Subscription ?? string.Empty;
+            if (subscription.StartsWith(AdhocDataCollectionSubscription))
+            {
+                // loading adhoc thread data, ignore here
+                return true;
+            }
+            
             var authorPubKey = ToNpub(response.Event?.Pubkey);
             if (authorPubKey == _botPublicKey.Bech32)
             {
@@ -117,13 +125,13 @@ namespace NostrBot.Web.Logic
                 return true;
             }
             
-            if (MentionSubscription.Equals(response.Subscription, StringComparison.OrdinalIgnoreCase))
+            if (MentionSubscription.Equals(subscription, StringComparison.OrdinalIgnoreCase))
             {
                 // always process direct mentions
                 return false;
             }
 
-            if (!GlobalSubscription.Equals(response.Subscription, StringComparison.OrdinalIgnoreCase))
+            if (!GlobalSubscription.Equals(subscription, StringComparison.OrdinalIgnoreCase))
             {
                 // process non-global stuff
                 return false;
@@ -147,7 +155,7 @@ namespace NostrBot.Web.Logic
                 .Split(" ");
             foreach (var keyword in _config.GlobalFeedKeywords)
             {
-                var keywordSafe = (keyword ?? string.Empty).ToLowerInvariant();
+                var keywordSafe = keyword.ToLowerInvariant();
                 if (contentSafe.Contains(keywordSafe))
                     return false;
             }
@@ -231,7 +239,7 @@ namespace NostrBot.Web.Logic
             var chatPrompts = new List<ChatPrompt>();
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
-            chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId));
+            chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId, response));
             chatPrompts.Add(new ChatPrompt("user", $"@{ToNpub(response.Event?.Pubkey)}: {userMessageProcessed}"));
 
             CircuitBreaker(chatPrompts);
@@ -310,9 +318,13 @@ namespace NostrBot.Web.Logic
             };
         }
 
-        private async Task<IEnumerable<ChatPrompt>> IncludeHistory(string contextId, string? secondaryContextId)
+        private async Task<IEnumerable<ChatPrompt>> IncludeHistory(string contextId, string? secondaryContextId,
+            NostrEventResponse response)
         {
             var historicalEvents = (await _storage.GetHistoryForContext(contextId, secondaryContextId)).ToList();
+            // var threadEvents = LoadThreadAsProcessed(response);
+            // historicalEvents.AddRange(threadEvents);
+
             if (!historicalEvents.Any())
             {
                 return Array.Empty<ChatPrompt>();
@@ -361,6 +373,9 @@ namespace NostrBot.Web.Logic
             var context = GenerateContextIdForPubkey(ev.NostrEventPubkey);
             events.AddRange(await _storage.GetHistoryForContext(context, null));
 
+            if (string.IsNullOrWhiteSpace(ev.NostrEventTagP))
+                return;
+            
             var contextRef = GenerateContextIdForPubkey(ev.NostrEventTagP);
             events.AddRange(await _storage.GetHistoryForContext(contextRef, null));
         }
@@ -405,9 +420,6 @@ namespace NostrBot.Web.Logic
         
         private string? ApplyMentions(string? message, NostrEventTags tags)
         {
-            var profileTags = tags
-                .Where(x => x.TagIdentifier == NostrEventTag.ProfileIdentifier)
-                .ToArray();
             if (string.IsNullOrWhiteSpace(message))
                 return message;
             var split = message.Split(" ");
@@ -419,9 +431,9 @@ namespace NostrBot.Web.Logic
                 var indexStr = word.TrimStart('#').TrimStart('[').TrimEnd(']');
                 if(!int.TryParse(indexStr, out int index))
                     continue;
-                if(profileTags.Length < index)
+                if(tags.Count < index)
                     continue;
-                var hex = profileTags[index].AdditionalData.FirstOrDefault() as string;
+                var hex = tags[index].AdditionalData.FirstOrDefault() as string;
                 var npub = ToNpub(hex);
                 split[i] = $"@{npub}";
             }
@@ -456,21 +468,8 @@ namespace NostrBot.Web.Logic
                 if(string.IsNullOrWhiteSpace(word))
                     continue;
                 var wordTrimmed = word
-                    .Trim('.')
-                    .Trim(',')
-                    .Trim(';')
-                    .Trim('\'')
-                    .Trim('"')
-                    .Trim('(')
-                    .Trim(')')
-                    .Trim('[')
-                    .Trim(']')
-                    .Trim('{')
-                    .Trim('}')
-                    .Trim(',')
-                    .Trim(';')
-                    .Trim('.')
-                    .Trim('@');
+                    .Trim('.', ',', ';', '!', '\'', '"', '\\', '/',
+                        '{', '}', '(', ')', '[', ']', '@', '#');
                 if (!wordTrimmed.StartsWith("npub1"))
                     continue;
                 var pubKey = NostrPublicKey.FromBech32(wordTrimmed);
@@ -479,6 +478,52 @@ namespace NostrBot.Web.Logic
                 npubCounter++;
             }
             return string.Join(" ", split);
+        }
+
+        private ProcessedEvent[] LoadThreadAsProcessed(NostrEventResponse response)
+        {
+            var evRootId = response.Event?.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier);
+            if (string.IsNullOrWhiteSpace(evRootId))
+                return Array.Empty<ProcessedEvent>();
+            
+            var events = LoadFullThread(evRootId);
+            return events
+                .Where(x => x.Event != null)
+                .Select(x => new ProcessedEvent()
+                {
+                    NostrEventCreatedAt = x.Event!.CreatedAt,
+                    NostrEventId = x.Event!.Id,
+                    NostrEventContent = x.Event!.Content,
+                    NostrEventPubkey = x.Event!.Pubkey,
+                    NostrEventKind = x.Event!.Kind,
+                    Relay = x.CommunicatorName,
+                    Created = DateTime.UtcNow
+                })
+                .ToArray();
+        }
+        
+        private NostrEventResponse[] LoadFullThread(string eventIdHex)
+        {
+            var subscription = $"{AdhocDataCollectionSubscription}:{Guid.NewGuid():N}";
+            _client.Send(new NostrRequest(subscription, new NostrFilter
+            {
+                Kinds = new [] { NostrKind.ShortTextNote },
+                E = new []{ eventIdHex }
+            }));
+            var eosCounter = 0;
+            var result = _client.Streams.EventStream
+                    .Where(x => x.Subscription == subscription)
+                    .Select(x => (NostrResponse)x)
+                .Merge(_client.Streams.EoseStream.Where(x => x.Subscription == subscription))
+                .Do(x => eosCounter += x is NostrEoseResponse ? 1 : 0)
+                .TakeWhile(_ => eosCounter < _client.Clients.Count)
+                .Timeout(TimeSpan.FromSeconds(5)).Catch(Observable.Return(default(NostrResponse)))
+                .Where(x => x is not null)
+                .ToArray()
+                .Wait();
+            return result
+                .OfType<NostrEventResponse>()
+                .ToArray();
         }
 
         private record ChatPromptTimed(DateTime Timestamp, ChatPrompt Prompt);
