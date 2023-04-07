@@ -192,6 +192,7 @@ namespace NostrBot.Web.Logic
 
             var newSecondaryContextId = GenerateContextIdForRoot(signed);
             await _storage.Store(contextId, response, ev, aiReply, message, newSecondaryContextId);
+            Log.Debug("[{relay}] AI public reply sent", response.CommunicatorName);
         }
 
         private async Task OnDirectMessage(NostrEventResponse response, NostrEncryptedDirectEvent dm)
@@ -216,7 +217,7 @@ namespace NostrBot.Web.Logic
 
             SendDirectMessage(aiReply, _botPrivateKey, receiver);
             await _storage.Store(contextId, response, dm, aiReply, decryptedMessage, null);
-            Log.Debug("[{relay}] AI reply sent", response.CommunicatorName);
+            Log.Debug("[{relay}] AI direct reply sent", response.CommunicatorName);
         }
 
         private void SendDirectMessage(string message, NostrPrivateKey sender, NostrPublicKey receiver)
@@ -363,15 +364,15 @@ namespace NostrBot.Web.Logic
                 var request = $"@{ToNpub(ev.NostrEventPubkey)}: {ev.NostrEventContent}";
                 var reply = ev.GeneratedReply ?? string.Empty;
 
-                prompts.Add(new ChatPromptTimed(timestamp, new ChatPrompt("user", request)));
-                prompts.Add(new ChatPromptTimed(timestamp.AddMilliseconds(1), new ChatPrompt("assistant", reply)));
-
                 currentSize += CountTextTokens(request) + CountTextTokens(reply);
                 if (currentSize >= maxSize)
                 {
                     // ignore rest of the history
                     break;
                 }
+                
+                prompts.Add(new ChatPromptTimed(timestamp, new ChatPrompt("user", request)));
+                prompts.Add(new ChatPromptTimed(timestamp.AddMilliseconds(1), new ChatPrompt("assistant", reply)));
             }
 
             var orderedPrompts = prompts
@@ -481,7 +482,7 @@ namespace NostrBot.Web.Logic
                 if(string.IsNullOrWhiteSpace(word))
                     continue;
                 var wordTrimmed = word
-                    .Trim('.', ',', ';', '!', '\'', '"', '\\', '/',
+                    .Trim('.', ',', ';', ':', '!', '\'', '"', '\\', '/',
                         '{', '}', '(', ')', '[', ']', '@', '#');
                 if (!wordTrimmed.StartsWith("npub1"))
                     continue;
