@@ -10,6 +10,8 @@
         
         public string[] BotIgnoreListPubKeys { get; init; } = Array.Empty<string>();
         
+        public bool SlowdownReplies { get; init; }
+        
         public bool ListenToGlobalFeed { get; init; }
 
 		public bool ReactToRootEventsInGlobalFeed { get; init; }

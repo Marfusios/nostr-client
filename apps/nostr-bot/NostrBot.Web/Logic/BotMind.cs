@@ -250,7 +250,20 @@ namespace NostrBot.Web.Logic
             var aiReply = string.Join(Environment.NewLine, result.Choices.Select(x => x.Message.Content));
 
             Log.Debug("[{relay}] AI reply: {reply}", response.CommunicatorName, aiReply);
+            await SlowdownReply(aiReply);
             return aiReply;
+        }
+
+        private async Task SlowdownReply(string reply)
+        {
+            if (!_config.SlowdownReplies)
+                return;
+
+            var tokens = CountTextTokens(reply);
+            var tokenPerSec = 3;
+            var secondsToWait = tokens / tokenPerSec;
+            Log.Debug("Slowdown enabled, waiting: {seconds} secs", secondsToWait);
+            await Task.Delay(TimeSpan.FromSeconds(secondsToWait));
         }
 
         private void CircuitBreaker(List<ChatPrompt> chatPrompts)

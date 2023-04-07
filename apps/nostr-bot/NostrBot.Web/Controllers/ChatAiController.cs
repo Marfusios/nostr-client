@@ -18,7 +18,7 @@ namespace NostrBot.Web.Controllers
         [HttpGet]
         public async Task<string> Get(string message)
         {
-            var api = new OpenAIClient(new OpenAIAuthentication("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", "org-JKDLHSXJ4YuYxvYp5qylR0Ty"));
+            var api = new OpenAIClient(new OpenAIAuthentication(""));
             //var models = await api.ModelsEndpoint.GetModelsAsync();
             //foreach (var model in models)
             //{
