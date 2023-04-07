@@ -216,6 +216,7 @@ namespace NostrBot.Web.Logic
 
             SendDirectMessage(aiReply, _botPrivateKey, receiver);
             await _storage.Store(contextId, response, dm, aiReply, decryptedMessage, null);
+            Log.Debug("[{relay}] AI reply sent", response.CommunicatorName);
         }
 
         private void SendDirectMessage(string message, NostrPrivateKey sender, NostrPublicKey receiver)
@@ -260,9 +261,8 @@ namespace NostrBot.Web.Logic
                 return;
 
             var tokens = CountTextTokens(reply);
-            var tokenPerSec = 3;
-            var secondsToWait = tokens / tokenPerSec;
-            Log.Debug("Slowdown enabled, waiting: {seconds} secs", secondsToWait);
+            var secondsToWait = tokens * Math.Max(0.01, _config.SlowdownPerTokenSec);
+            Log.Debug("Slowdown enabled, waiting: {seconds} secs", secondsToWait.ToString("F"));
             await Task.Delay(TimeSpan.FromSeconds(secondsToWait));
         }
 
@@ -349,7 +349,7 @@ namespace NostrBot.Web.Logic
             }
 
             var prompts = new List<ChatPromptTimed>();
-            var maxSize = 2000;
+            var maxSize = _config.LimitForHistoricalTokens;
             var currentSize = 0;
 
             var orderedBackward = historicalEvents

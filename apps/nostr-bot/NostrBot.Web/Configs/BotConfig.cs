@@ -11,6 +11,10 @@
         public string[] BotIgnoreListPubKeys { get; init; } = Array.Empty<string>();
         
         public bool SlowdownReplies { get; init; }
+
+        public double SlowdownPerTokenSec { get; init; } = 1;
+
+        public int LimitForHistoricalTokens { get; init; } = 2000;
         
         public bool ListenToGlobalFeed { get; init; }
 
