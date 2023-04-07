@@ -9,6 +9,7 @@ using Nostr.Client.Requests;
 using Nostr.Client.Responses;
 using Nostr.Client.Utils;
 using NostrBot.Web.Storage;
+using NostrBot.Web.Utils;
 using OpenAI;
 using Serilog;
 using OpenAI.Chat;
@@ -31,6 +32,8 @@ namespace NostrBot.Web.Logic
 
         private readonly NostrPrivateKey _botPrivateKey;
         private readonly NostrPublicKey _botPublicKey;
+        
+        private CancellationToken? _stoppingToken;
 
         public BotMind(IOptions<NostrConfig> nostrConfig, IOptions<BotConfig> config,
             NostrMultiWebsocketClient client, NostrEventsQueue eventsQueue, OpenAIClient openAi, BotStorage storage, BotManagement management)
@@ -54,6 +57,8 @@ namespace NostrBot.Web.Logic
             Log.Information("Bot description: {description}", _config.BotDescription);
             Log.Information("Bot whois: {description}", _config.BotWhois);
 
+            _stoppingToken = stoppingToken;
+            
             try
             {
                 await foreach (var response in _eventsQueue.Reader.ReadAllAsync(stoppingToken))
@@ -264,7 +269,7 @@ namespace NostrBot.Web.Logic
             var tokens = CountTextTokens(reply);
             var secondsToWait = tokens * Math.Max(0.01, _config.SlowdownPerTokenSec);
             Log.Debug("Slowdown enabled, waiting: {seconds} secs", secondsToWait.ToString("F"));
-            await Task.Delay(TimeSpan.FromSeconds(secondsToWait));
+            await TaskUtils.DelaySafely(TimeSpan.FromSeconds(secondsToWait), _stoppingToken);
         }
 
         private void CircuitBreaker(List<ChatPrompt> chatPrompts)
