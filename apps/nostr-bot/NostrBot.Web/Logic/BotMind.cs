@@ -13,6 +13,7 @@ using NostrBot.Web.Utils;
 using OpenAI;
 using Serilog;
 using OpenAI.Chat;
+using OpenAI.Models;
 
 namespace NostrBot.Web.Logic
 {
@@ -21,8 +22,9 @@ namespace NostrBot.Web.Logic
         public const string MentionSubscription = "bot:mentions";
         public const string GlobalSubscription = "bot:global";
         public const string AdhocDataCollectionSubscription = "bot:adhoc";
-        
+
         private readonly NostrConfig _nostrConfig;
+        private readonly OpenAiConfig _openAiConfig;
         private readonly BotConfig _config;
         private readonly NostrMultiWebsocketClient _client;
         private readonly NostrEventsQueue _eventsQueue;
@@ -32,20 +34,21 @@ namespace NostrBot.Web.Logic
 
         private readonly NostrPrivateKey _botPrivateKey;
         private readonly NostrPublicKey _botPublicKey;
-        
+
         private CancellationToken? _stoppingToken;
 
-        public BotMind(IOptions<NostrConfig> nostrConfig, IOptions<BotConfig> config,
+        public BotMind(IOptions<NostrConfig> nostrConfig, IOptions<BotConfig> config, IOptions<OpenAiConfig> openAiConfig,
             NostrMultiWebsocketClient client, NostrEventsQueue eventsQueue, OpenAIClient openAi, BotStorage storage, BotManagement management)
         {
             _eventsQueue = eventsQueue;
             _openAi = openAi;
             _storage = storage;
             _management = management;
+            _openAiConfig = openAiConfig.Value;
             _nostrConfig = nostrConfig.Value;
             _config = config.Value;
             _client = client;
-            
+
             _botPrivateKey = NostrPrivateKey.FromBech32(_nostrConfig.PrivateKey);
             _botPublicKey = _botPrivateKey.DerivePublicKey();
         }
@@ -58,7 +61,7 @@ namespace NostrBot.Web.Logic
             Log.Information("Bot whois: {description}", _config.BotWhois);
 
             _stoppingToken = stoppingToken;
-            
+
             try
             {
                 await foreach (var response in _eventsQueue.Reader.ReadAllAsync(stoppingToken))
@@ -93,7 +96,7 @@ namespace NostrBot.Web.Logic
 
             if (ShouldIgnore(response))
                 return;
-            
+
             if (await _storage.IsProcessed(response.Event))
             {
                 Log.Verbose("[{relay}] Received event is already processed, content: {content}", response.CommunicatorName, response.Event.Content);
@@ -114,10 +117,10 @@ namespace NostrBot.Web.Logic
             var subscription = response.Subscription ?? string.Empty;
             if (subscription.StartsWith(AdhocDataCollectionSubscription))
             {
-                // loading adhoc thread data, ignore here
+                // loading ad-hoc data, ignore here
                 return true;
             }
-            
+
             var authorPubKey = ToNpub(response.Event?.Pubkey);
             if (authorPubKey == _botPublicKey.Bech32)
             {
@@ -129,7 +132,7 @@ namespace NostrBot.Web.Logic
             {
                 return true;
             }
-            
+
             if (MentionSubscription.Equals(subscription, StringComparison.OrdinalIgnoreCase))
             {
                 // always process direct mentions
@@ -154,7 +157,7 @@ namespace NostrBot.Web.Logic
                 // ignore events in threads
                 return true;
             }
-            
+
             var contentSafe = (response.Event?.Content ?? string.Empty)
                 .ToLowerInvariant()
                 .Split(" ");
@@ -183,7 +186,7 @@ namespace NostrBot.Web.Logic
             var processedMessage = ExtractMentionsSafely(aiReply, out NostrEventTags tags);
             tags.Add(new NostrEventTag("e", ev.Id ?? string.Empty));
             tags.Add(new NostrEventTag("p", ev.Pubkey ?? string.Empty));
-            
+
             var replyEvent = new NostrEvent
             {
                 Kind = ev.Kind,
@@ -238,11 +241,11 @@ namespace NostrBot.Web.Logic
             _client.Send(new NostrEventRequest(signed));
         }
 
-        private async Task<string> RequestAiReply(NostrEventResponse response, string contextId, 
+        private async Task<string> RequestAiReply(NostrEventResponse response, string contextId,
             string? secondaryContextId, string? userMessage)
         {
             var userMessageProcessed = ApplyMentionsSafely(userMessage, response.Event?.Tags);
-            
+
             var chatPrompts = new List<ChatPrompt>();
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
@@ -251,7 +254,13 @@ namespace NostrBot.Web.Logic
 
             CircuitBreaker(chatPrompts);
 
-            var chatRequest = new ChatRequest(chatPrompts);
+            var chatRequest = new ChatRequest(chatPrompts,
+                model: _openAiConfig.Model,
+                temperature: _openAiConfig.Temperature,
+                maxTokens: _openAiConfig.MaxTokens,
+                presencePenalty: _openAiConfig.PresencePenalty,
+                frequencyPenalty: _openAiConfig.FrequencyPenalty
+                );
             var result = await _openAi.ChatEndpoint.GetCompletionAsync(chatRequest);
 
             var aiReply = string.Join(Environment.NewLine, result.Choices.Select(x => x.Message.Content));
@@ -375,7 +384,7 @@ namespace NostrBot.Web.Logic
                     // ignore rest of the history
                     break;
                 }
-                
+
                 prompts.Add(new ChatPromptTimed(timestamp, new ChatPrompt("user", request)));
                 prompts.Add(new ChatPromptTimed(timestamp.AddMilliseconds(1), new ChatPrompt("assistant", reply)));
             }
@@ -394,7 +403,7 @@ namespace NostrBot.Web.Logic
 
             if (string.IsNullOrWhiteSpace(ev.NostrEventTagP))
                 return;
-            
+
             var contextRef = GenerateContextIdForPubkey(ev.NostrEventTagP);
             events.AddRange(await _storage.GetHistoryForContext(contextRef, null));
         }
@@ -419,12 +428,12 @@ namespace NostrBot.Web.Logic
 
             return hex;
         }
-        
+
         private string? ApplyMentionsSafely(string? message, NostrEventTags? tags)
         {
             if (tags == null || !tags.Any())
                 return message;
-            
+
             try
             {
                 return ApplyMentions(message, tags);
@@ -436,7 +445,7 @@ namespace NostrBot.Web.Logic
                 return message;
             }
         }
-        
+
         private string? ApplyMentions(string? message, NostrEventTags tags)
         {
             if (string.IsNullOrWhiteSpace(message))
@@ -445,12 +454,12 @@ namespace NostrBot.Web.Logic
             for (int i = 0; i < split.Length; i++)
             {
                 var word = split[i];
-                if(string.IsNullOrWhiteSpace(word) || !word.StartsWith("#[") || !word.EndsWith("]"))
+                if (string.IsNullOrWhiteSpace(word) || !word.StartsWith("#[") || !word.EndsWith("]"))
                     continue;
                 var indexStr = word.TrimStart('#').TrimStart('[').TrimEnd(']');
-                if(!int.TryParse(indexStr, out int index))
+                if (!int.TryParse(indexStr, out int index))
                     continue;
-                if(tags.Count < index)
+                if (tags.Count < index)
                     continue;
                 var hex = tags[index].AdditionalData.FirstOrDefault() as string;
                 var npub = ToNpub(hex);
@@ -458,7 +467,7 @@ namespace NostrBot.Web.Logic
             }
             return string.Join(" ", split);
         }
-        
+
         private string? ExtractMentionsSafely(string? message, out NostrEventTags tags)
         {
             try
@@ -473,7 +482,7 @@ namespace NostrBot.Web.Logic
                 return message;
             }
         }
-        
+
         private string? ExtractMentions(string? message, out NostrEventTags tags)
         {
             tags = new NostrEventTags();
@@ -484,7 +493,7 @@ namespace NostrBot.Web.Logic
             for (int i = 0; i < split.Length; i++)
             {
                 var word = split[i];
-                if(string.IsNullOrWhiteSpace(word))
+                if (string.IsNullOrWhiteSpace(word))
                     continue;
                 var wordTrimmed = word
                     .Trim('.', ',', ';', ':', '!', '\'', '"', '\\', '/',
@@ -504,7 +513,7 @@ namespace NostrBot.Web.Logic
             var evRootId = response.Event?.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier);
             if (string.IsNullOrWhiteSpace(evRootId))
                 return Array.Empty<ProcessedEvent>();
-            
+
             var events = LoadFullThread(evRootId);
             return events
                 .Where(x => x.Event != null)
@@ -520,14 +529,14 @@ namespace NostrBot.Web.Logic
                 })
                 .ToArray();
         }
-        
+
         private NostrEventResponse[] LoadFullThread(string eventIdHex)
         {
             var subscription = $"{AdhocDataCollectionSubscription}:{Guid.NewGuid():N}";
             _client.Send(new NostrRequest(subscription, new NostrFilter
             {
-                Kinds = new [] { NostrKind.ShortTextNote },
-                E = new []{ eventIdHex }
+                Kinds = new[] { NostrKind.ShortTextNote },
+                E = new[] { eventIdHex }
             }));
             var eosCounter = 0;
             var result = _client.Streams.EventStream
