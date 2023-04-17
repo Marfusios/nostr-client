@@ -26,5 +26,22 @@ namespace Nostr.Client.Json
                 return null;
             return JsonConvert.DeserializeObject<TNostrType>(json, NostrSerializer.Settings);
         }
+
+        /// <summary>
+        /// Deserialize json into Nostr type, use preconfigured serializer, swallow any exception
+        /// </summary>
+        public static T? DeserializeSafely<T>(string? content)
+        {
+            try
+            {
+                return content == null ?
+                    default :
+                    JsonConvert.DeserializeObject<T>(content, NostrSerializer.Settings);
+            }
+            catch (Exception)
+            {
+                return default;
+            }
+        }
     }
 }

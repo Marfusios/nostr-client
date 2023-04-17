@@ -1,6 +1,8 @@
 ﻿@inject RelayConnection NostrRelay
 @inject EventStorage EventStorage;
 @using System.Reactive.Linq
+@using BTCPayServer.Lightning
+@using Nostr.Client.Messages.Zaps
 @implements IDisposable
 
 <div>
@@ -20,14 +22,21 @@
         <TemplateColumn Title="Author" Sortable="true">
             <span>@context.Pubkey[..4]..@context.Pubkey[^4..]</span>
         </TemplateColumn>
-        <PropertyColumn Title="Content" Property="@(p => p.Content)" Sortable="true" />
+        <TemplateColumn Title="Content" Sortable="true">
+            <span>@FormatContent(context)</span>
+        </TemplateColumn>
     </FluentDataGrid>
     <FluentPaginator Value="@_pagination" />
 
     <Stack Orientation="Orientation.Horizontal" HorizontalGap="10" HorizontalAlignment="StackHorizontalAlignment.Right" VerticalAlignment="StackVerticalAlignment.Center">
+        
+        <span style="margin-right: auto">
+            @FormatSummary()
+        </span>
+
         <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearData">
             Clear
-            <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral" />
+            <FluentIcon Name="@FluentIcons.Delete" Slot="end" Size="@IconSize.Size16" Color="Color.Neutral"/>
         </FluentButton>
 
         <span>Page size</span>
@@ -95,4 +104,38 @@
 
         _eventDialog?.ShowEvent(ev);
     }
+
+    private string? FormatContent(NostrEvent ev)
+    {
+        if (ev is NostrZapReceiptEvent evZap)
+        {
+            var invoice = evZap.DecodeBolt11();
+            var amount = invoice?.MinimumAmount?.ToUnit(LightMoneyUnit.Satoshi);
+            return amount == null ? ev.Content : $"{amount} sats {evZap.Content}";
+        }
+
+        return ev.Content;
+    }
+
+    private string FormatSummary()
+    {
+        if (!_receivedData.Any())
+            return string.Empty;
+
+        var zaps = _receivedData.OfType<NostrZapReceiptEvent>().ToArray();
+        if (!zaps.Any())
+            return string.Empty;
+
+        var invoices = zaps
+            .Select(x => x.DecodeBolt11())
+            .Where(x => x != null)
+            .ToArray();
+
+        var totalAmount = invoices
+            .Select(x => x!.MinimumAmount)
+            .Sum(x => x.ToUnit(LightMoneyUnit.Satoshi));
+
+        return $"Received {zaps.Length} zaps for {totalAmount:###,###,###} sats";
+    }
+
 }

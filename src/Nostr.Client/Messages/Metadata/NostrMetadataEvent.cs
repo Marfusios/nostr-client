@@ -8,7 +8,7 @@ namespace Nostr.Client.Messages.Metadata
         public NostrMetadataEvent(string? content)
         {
             Content = content;
-            Metadata = NostrSerializer.DeserializeSafely<NostrMetadata>(content);
+            Metadata = NostrJson.DeserializeSafely<NostrMetadata>(content);
         }
 
         [JsonIgnore]

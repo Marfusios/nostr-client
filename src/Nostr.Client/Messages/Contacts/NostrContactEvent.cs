@@ -8,7 +8,7 @@ namespace Nostr.Client.Messages.Contacts
         public NostrContactEvent(string? content)
         {
             Content = content;
-            Relays = NostrSerializer.DeserializeSafely<NostrRelays>(content) ??
+            Relays = NostrJson.DeserializeSafely<NostrRelays>(content) ??
                      new NostrRelays(new Dictionary<string, NostrRelayConfig>());
         }
 

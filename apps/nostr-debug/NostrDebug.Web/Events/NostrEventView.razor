@@ -1,7 +1,9 @@
 ﻿@using System.ComponentModel.DataAnnotations
+@using BTCPayServer.Lightning
 @using Newtonsoft.Json
 @using Newtonsoft.Json.Linq
 @using Nostr.Client.Json
+@using Nostr.Client.Messages.Zaps
 
 <div>
     <PageHeader Title3="@_displayedEvent?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
@@ -72,6 +74,15 @@
         <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(_displayedEvent?.Pubkey)" target="_blank">@ExternalLinks.FormatToNpub(_displayedEvent?.Pubkey)</a></div>
     </p>
     
+    @if (_displayedEvent is NostrZapReceiptEvent zapEvent)
+    {
+        <p>
+            <strong>Invoice</strong>
+            <div>Sats: @zapEvent.DecodeBolt11()?.MinimumAmount.ToUnit(LightMoneyUnit.Satoshi)</div>
+            <div>Recipient <a class="clear-link" href="@ExternalLinks.GetLinkToProfile(zapEvent?.RecipientPubkey)" target="_blank">@ExternalLinks.FormatToNpub(zapEvent?.RecipientPubkey)</a></div>
+        </p>
+    }
+
     @if (_eventJson == null)
     {
         <FluentButton Appearance="Appearance.Neutral" @onclick="OnDisplayJson">
