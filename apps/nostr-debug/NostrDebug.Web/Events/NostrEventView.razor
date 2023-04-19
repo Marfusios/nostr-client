@@ -73,7 +73,7 @@
         <div>@_displayedEvent?.Pubkey</div>
         <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(_displayedEvent?.Pubkey)" target="_blank">@ExternalLinks.FormatToNpub(_displayedEvent?.Pubkey)</a></div>
     </p>
-    
+
     @if (_displayedEvent is NostrZapReceiptEvent zapEvent)
     {
         <p>

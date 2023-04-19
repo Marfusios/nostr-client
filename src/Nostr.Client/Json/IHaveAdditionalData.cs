@@ -8,6 +8,11 @@
         /// <summary>
         /// Data that wasn't parsed into properties
         /// </summary>
-        public object[] AdditionalData { get; internal set; }
+        object[] AdditionalData { get; }
+
+        /// <summary>
+        /// Set additional data, should not be used outside of this library
+        /// </summary>
+        void SetAdditionalData(object[] data);
     }
 }

@@ -190,7 +190,7 @@ namespace Nostr.Client.Json
                     .Select(x => x.ToObject<object>(NostrSerializer.Serializer))
                     .Where(x => x != null)
                     .ToArray();
-                resultWithData.AdditionalData = unhandledData!;
+                resultWithData.SetAdditionalData(unhandledData!);
             }
 
             return result;

@@ -14,7 +14,7 @@ namespace Nostr.Client.Responses
         /// <summary>
         /// Additional data that are not yet handled by this library (parsed into properties)
         /// </summary>
-        public object[] AdditionalData { get; set; } = Array.Empty<object>();
+        public object[] AdditionalData { get; private set; } = Array.Empty<object>();
 
         /// <summary>
         /// Name of the source communicator/relay
@@ -27,5 +27,14 @@ namespace Nostr.Client.Responses
         /// </summary>
         [JsonIgnore]
         public DateTime ReceivedTimestamp { get; internal set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Set additional data, should not be used outside of this library.
+        /// Hidden behind explicit interface implementation to avoid accidental usage.
+        /// </summary>
+        void IHaveAdditionalData.SetAdditionalData(object[] data)
+        {
+            AdditionalData = data;
+        }
     }
 }

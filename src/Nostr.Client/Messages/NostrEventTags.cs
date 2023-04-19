@@ -1,12 +1,18 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections;
+using System.Collections.ObjectModel;
 
 namespace Nostr.Client.Messages
 {
-    public class NostrEventTags : Collection<NostrEventTag>
+    public class NostrEventTags : IReadOnlyCollection<NostrEventTag>
     {
         public static NostrEventTags Empty => new();
+        protected readonly Collection<NostrEventTag> Collection = new();
 
         public NostrEventTags()
+        {
+        }
+
+        public NostrEventTags(IEnumerable<NostrEventTag> tags) : this(tags.ToArray())
         {
         }
 
@@ -14,7 +20,7 @@ namespace Nostr.Client.Messages
         {
             foreach (var tag in tags)
             {
-                Add(tag);
+                Collection.Add(tag);
             }
         }
 
@@ -61,14 +67,25 @@ namespace Nostr.Client.Messages
             return tags.Any(x => x.AdditionalData.Any(y => y?.ToString() == tagValue));
         }
 
-        public NostrEventTags DeepClone()
+        public NostrEventTags DeepClone(params NostrEventTag[] tags)
         {
-            var clone = new NostrEventTags();
-            foreach (var tag in this)
-            {
-                clone.Add(tag.DeepClone());
-            }
+            var allTags = this.Concat(tags).ToArray();
+            var clone = new NostrEventTags(allTags);
             return clone;
         }
+
+        public IEnumerator<NostrEventTag> GetEnumerator()
+        {
+            return Collection.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)Collection).GetEnumerator();
+        }
+
+        public int Count => Collection.Count;
+
+        public NostrEventTag this[int index] => Collection[index];
     }
 }

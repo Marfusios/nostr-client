@@ -14,6 +14,7 @@ using OpenAI;
 using Serilog;
 using OpenAI.Chat;
 using OpenAI.Models;
+using Nostr.Client.Messages.Mutable;
 
 namespace NostrBot.Web.Logic
 {
@@ -183,7 +184,7 @@ namespace NostrBot.Web.Logic
             var secondaryContextId = GenerateContextIdForReplyOrRoot(ev);
             var aiReply = await RequestAiReply(response, contextId, secondaryContextId, message);
 
-            var processedMessage = ExtractMentionsSafely(aiReply, out NostrEventTags tags);
+            var processedMessage = ExtractMentionsSafely(aiReply, out NostrEventTagsMutable tags);
             tags.Add(new NostrEventTag("e", ev.Id ?? string.Empty));
             tags.Add(new NostrEventTag("p", ev.Pubkey ?? string.Empty));
 
@@ -468,7 +469,7 @@ namespace NostrBot.Web.Logic
             return string.Join(" ", split);
         }
 
-        private string? ExtractMentionsSafely(string? message, out NostrEventTags tags)
+        private string? ExtractMentionsSafely(string? message, out NostrEventTagsMutable tags)
         {
             try
             {
@@ -478,14 +479,14 @@ namespace NostrBot.Web.Logic
             {
                 Log.Warning(e, "Failed to extract mentions from message: {message}, error: {error}",
                     message, e.Message);
-                tags = new NostrEventTags();
+                tags = new NostrEventTagsMutable();
                 return message;
             }
         }
 
-        private string? ExtractMentions(string? message, out NostrEventTags tags)
+        private string? ExtractMentions(string? message, out NostrEventTagsMutable tags)
         {
-            tags = new NostrEventTags();
+            tags = new NostrEventTagsMutable();
             if (string.IsNullOrWhiteSpace(message))
                 return message;
             var split = message.Split(" ");

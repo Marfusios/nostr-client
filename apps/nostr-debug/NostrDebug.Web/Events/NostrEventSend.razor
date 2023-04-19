@@ -1,7 +1,8 @@
 ﻿@using Nostr.Client.Requests
 @using Nostr.Client.Responses
 @using System.ComponentModel.DataAnnotations
-@using Nostr.Client.Messages
+@using Nostr.Client.Messages;
+@using Nostr.Client.Messages.Mutable
 @inject RelayConnection NostrRelay
 @inject EventStorage EventStorage;
 @implements IDisposable
@@ -33,14 +34,14 @@
 
     [Parameter]
     [Required]
-    public NostrEvent Event { get; set; } = new()
+    public NostrEventMutable Event { get; set; } = new()
     {
         Kind = NostrKind.ShortTextNote,
         CreatedAt = DateTime.Now
     };
 
     [Parameter]
-    public EventCallback<NostrEvent> EventChanged { get; set; }
+    public EventCallback<NostrEventMutable> EventChanged { get; set; }
 
     public void Dispose()
     {
@@ -78,7 +79,8 @@
     {
         _isSending = true;
         _sendingEventId = Event.Id;
-        EventStorage.Store(Event);
-        NostrRelay.Client.Send(new NostrEventRequest(Event));
+        var ev = Event.ToEvent();
+        EventStorage.Store(ev);
+        NostrRelay.Client.Send(new NostrEventRequest(ev));
     }
 }

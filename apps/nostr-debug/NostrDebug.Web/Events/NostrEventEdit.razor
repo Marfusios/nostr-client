@@ -1,7 +1,9 @@
 ﻿@using Nostr.Client.Responses
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components
 @using Nostr.Client.Keys
 @using Nostr.Client.Messages
+@using Nostr.Client.Messages.Mutable
 @using Nostr.Client.Requests
 @using Nostr.Client.Utils
 @inject IJSRuntime JsRuntime
@@ -143,26 +145,26 @@
     private NostrEventEditJsonDialog? _eventJsonDialog;
     private NostrDirectEventDialog? _eventDirectDialog;
 
-    private readonly List<NostrEventTag> _tags = new();
-    private readonly Dictionary<NostrEventTag, List<TagValue>> _tagValues = new();
+    private readonly List<NostrEventTagMutable> _tags = new();
+    private readonly Dictionary<NostrEventTagMutable, List<TagValue>> _tagValues = new();
 
     [Parameter]
     [Required]
-    public NostrEvent Event { get; set; } = new();
+    public NostrEventMutable Event { get; set; } = new();
 
     [Parameter]
-    public EventCallback<NostrEvent> EventChanged { get; set; }
+    public EventCallback<NostrEventMutable> EventChanged { get; set; }
 
     public async Task ChangeEvent(NostrEvent ev)
     {
-        Event = ev;
+        Event = NostrEventMutable.FromEvent(ev);
         RestoreTags(Event);
         TryConvertPubkey();
         OnEventChanged();
 
         if (EventChanged.HasDelegate)
         {
-            await EventChanged.InvokeAsync(ev);
+            await EventChanged.InvokeAsync(Event);
         }
     }
 
@@ -176,13 +178,15 @@
             if (_privateKey != null)
                 Event.Pubkey = _privateKey.DerivePublicKey().Hex;
 
-            var id = Event.ComputeId();
+            var ev = Event.ToEvent();
+            var id = ev.ComputeId();
             Event.Id = id;
 
             if (_privateKey == null)
                 return;
 
-            Event.Sig = Event.ComputeSignature(_privateKey);
+            ev = ev.DeepClone(id, null);
+            Event.Sig = ev.ComputeSignature(_privateKey);
         }
         catch (Exception e)
         {
@@ -279,34 +283,34 @@
 
     private void OnAddTagGroup()
     {
-        NostrEventTag tag;
+        NostrEventTagMutable tag;
         if (!_tags.Any())
-            tag = new NostrEventTag(NostrEventTag.EventIdentifier);
+            tag = new NostrEventTagMutable(NostrEventTag.EventIdentifier);
         else if (_tags.Count == 1)
-            tag = new NostrEventTag(NostrEventTag.ProfileIdentifier);
+            tag = new NostrEventTagMutable(NostrEventTag.ProfileIdentifier);
         else
-            tag = new NostrEventTag(null);
+            tag = new NostrEventTagMutable(null);
 
         _tags.Add(tag);
         _tagValues[tag] = new List<TagValue>();
         OnEventChanged();
     }
 
-    private void OnRemoveTagGroup(NostrEventTag tag)
+    private void OnRemoveTagGroup(NostrEventTagMutable tag)
     {
         _tags.Remove(tag);
         _tagValues.Remove(tag);
         OnEventChanged();
     }
 
-    private void OnAddTagValue(NostrEventTag tag)
+    private void OnAddTagValue(NostrEventTagMutable tag)
     {
         var values = _tagValues[tag];
         values.Add(new TagValue(values.Count + 1));
         OnEventChanged();
     }
 
-    private void OnRemoveTagValue(NostrEventTag tag, TagValue tagValue)
+    private void OnRemoveTagValue(NostrEventTagMutable tag, TagValue tagValue)
     {
         _tagValues[tag].Remove(tagValue);
         OnEventChanged();
@@ -323,20 +327,22 @@
                 .Select(x => x.Value!)
                 .ToArray();
         }
-        Event.Tags = new NostrEventTags(_tags
+        Event.Tags = new NostrEventTagsMutable(_tags
+            .Select(x => x.ToTag())
             .Where(x => !string.IsNullOrWhiteSpace(x.TagIdentifier))
             .ToArray());
     }
 
-    private void RestoreTags(NostrEvent ev)
+    private void RestoreTags(NostrEventMutable ev)
     {
         _tags.Clear();
         _tagValues.Clear();
 
         if (ev.Tags == null)
             return;
-        foreach (var tag in ev.Tags)
+        foreach (var tagImmutable in ev.Tags)
         {
+            var tag= NostrEventTagMutable.FromTag(tagImmutable);
             _tags.Add(tag);
             if(tag.AdditionalData.Any())
                 _tagValues[tag] = new List<TagValue>();
@@ -353,14 +359,14 @@
     {
         if (_eventJsonDialog == null)
             return;
-        await _eventJsonDialog.ShowEvent(Event);
+        await _eventJsonDialog.ShowEvent(Event.ToEvent());
     }
 
     private void OnEncryptDirect()
     {
         if (_eventDirectDialog == null)
             return;
-        _eventDirectDialog.ShowEvent(Event, _privateKeyStr, Event.Pubkey);
+        _eventDirectDialog.ShowEvent(Event.ToEvent(), _privateKeyStr, Event.Pubkey);
     }
 
     private record TagValue(int Order)

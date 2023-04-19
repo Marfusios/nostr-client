@@ -10,44 +10,55 @@ namespace Nostr.Client.Messages
     [DebuggerDisplay("{CreatedAt} {Kind.ToString()} {Pubkey}")]
     public class NostrEvent : IEquatable<NostrEvent>
     {
+        [JsonExtensionData]
+        private Dictionary<string, object?> _additionalData = new();
+
         /// <summary>
         /// 32-bytes lowercase hex-encoded sha256 of the the serialized event data
         /// </summary>
         [ArrayProperty(0)]
-        public string? Id { get; set; }
+        public string? Id { get; init; }
 
         /// <summary>
         /// 32-bytes lowercase hex-encoded public key of the event creator
         /// </summary>
         [ArrayProperty(1)]
-        public string? Pubkey { get; set; }
+        public string? Pubkey { get; init; }
 
         [JsonProperty("created_at")]
         [ArrayProperty(2)]
-        public DateTime? CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; init; }
 
         [ArrayProperty(3)]
-        public NostrKind Kind { get; set; }
+        public NostrKind Kind { get; init; }
 
         [ArrayProperty(4)]
-        public NostrEventTags? Tags { get; set; } = NostrEventTags.Empty;
+        public NostrEventTags? Tags { get; init; } = NostrEventTags.Empty;
 
         /// <summary>
         /// Arbitrary string
         /// </summary>
         [ArrayProperty(5)]
-        public string? Content { get; set; }
+        public string? Content { get; init; }
 
         /// <summary>
         /// 64-bytes hex of the signature of the sha256 hash of the serialized event data, which is the same as the "id" field
         /// </summary>
-        public string? Sig { get; set; }
+        public string? Sig { get; init; }
 
         /// <summary>
         /// Additional unparsed data
         /// </summary>
-        [JsonExtensionData]
-        public Dictionary<string, object> AdditionalData { get; init; } = new();
+        [JsonIgnore]
+        public IReadOnlyDictionary<string, object?> AdditionalData
+        {
+            get => _additionalData;
+            init
+            {
+                _additionalData = value as Dictionary<string, object?> ??
+                                  value.ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
 
         /// <summary>
         /// Clone event and all property hierarchy
@@ -87,7 +98,7 @@ namespace Nostr.Client.Messages
                 Tags = tags?.DeepClone() ?? NostrEventTags.Empty,
                 Content = Content,
                 Sig = signature,
-                AdditionalData = AdditionalData.ToDictionary(x => x.Key, y => y.Value)
+                _additionalData = _additionalData.ToDictionary(x => x.Key, y => y.Value)
             };
         }
 
@@ -188,7 +199,7 @@ namespace Nostr.Client.Messages
             var receiverPubkey = receiver.Hex;
             var tagsWithReceiver = Tags ?? new NostrEventTags();
             if (!tagsWithReceiver.ContainsProfile(receiverPubkey))
-                tagsWithReceiver.Add(NostrEventTag.Profile(receiverPubkey));
+                tagsWithReceiver = tagsWithReceiver.DeepClone(NostrEventTag.Profile(receiverPubkey));
 
             var clone = DeepClone(null, null, sender.Hex, tagsWithReceiver);
             return NostrEncryptedDirectEvent.Encrypt(clone, sender);

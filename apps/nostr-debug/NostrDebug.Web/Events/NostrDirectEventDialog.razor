@@ -121,8 +121,6 @@
             var senderKey = NostrPrivateKey.FromHex(senderHex);
 
             var ev = _selectedEvent ?? new NostrEvent();
-            ev.Kind = NostrKind.EncryptedDm;
-
             var encrypted = ev.EncryptDirect(senderKey, receiverKey);
 
             _error = null;
