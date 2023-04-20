@@ -1,4 +1,4 @@
-﻿@inject RelayConnection NostrRelay
+﻿@inject RelayList Relays
 @inject EventStorage EventStorage;
 @implements IDisposable
 
@@ -63,9 +63,9 @@
 
     protected override void OnInitialized()
     {
-        _websocketHandlerOkData = NostrRelay.Client.Streams.OkStream
+        _websocketHandlerOkData = Relays.Client.Streams.OkStream
             .Subscribe(HandleOk);
-        _websocketHandlerNoticeData = NostrRelay.Client.Streams.NoticeStream
+        _websocketHandlerNoticeData = Relays.Client.Streams.NoticeStream
             .Subscribe(HandleNotice);
 
         base.OnInitialized();
@@ -73,6 +73,7 @@
 
     private void HandleOk(NostrOkResponse response)
     {
+        Console.WriteLine($"Received OK, {response.CommunicatorName} | {response.Message}");
         var converted = new ItemModel(
             response.CommunicatorName,
             response.ReceivedTimestamp,
@@ -87,6 +88,7 @@
 
     private void HandleNotice(NostrNoticeResponse response)
     {
+        Console.WriteLine($"Received Notice, {response.CommunicatorName} | {response.Message}");
         var converted = new ItemModel(
             response.CommunicatorName,
             response.ReceivedTimestamp,

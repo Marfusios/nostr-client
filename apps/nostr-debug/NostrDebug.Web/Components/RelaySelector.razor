@@ -1,0 +1,99 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components
+
+<Stack Orientation="Orientation.Vertical" VerticalGap="10">
+    <Stack Orientation="Orientation.Horizontal" HorizontalGap="20">
+
+        @if (_relay.IsConnected)
+        {
+            <FluentIcon Name="@FluentIcons.Globe" Size="@IconSize.Size32" Variant="@IconVariant.Regular" Color="@Color.Success" style="align-self: end" />
+        }
+        else
+        {
+            <FluentIcon Name="@FluentIcons.Globe" Size="@IconSize.Size32" Variant="@IconVariant.Regular" Color="@Color.Error" style="align-self: end" />
+        }
+
+        <FluentCombobox Items="@RelayList.DefaultRelays" @bind-Value="_selectedRelayUrl" Disabled="@_relay.IsConnecting"></FluentCombobox>
+
+        @if (_relay.IsConnecting)
+        {
+            <FluentButton Appearance="Appearance.Neutral" style="align-self: end" @onclick="OnDisconnect">
+                Disconnect
+                <FluentIcon Name="@FluentIcons.CloudDismiss" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
+            </FluentButton>
+        }
+        else
+        {
+            <FluentButton Appearance="Appearance.Accent" style="align-self: end" @onclick="OnConnect">
+                Connect
+                <FluentIcon Name="@FluentIcons.CloudCheckmark" Slot="start" Size="@IconSize.Size16" Variant="IconVariant.Regular" Color="Color.Fill" />
+            </FluentButton>
+        }
+
+    </Stack>
+    <div>
+        <pre>Received messages: @_relay.ReceivedMessagesCount</pre>
+    </div>
+</Stack>
+
+@code {
+
+    private string? _selectedRelayUrl;
+    private RelayConnection _relay = null!;
+
+    [Parameter]
+    [Required]
+    public RelayConnection Relay
+    {
+        get => _relay;
+        set
+        {
+            _relay = value;
+            _selectedRelayUrl = _relay.RelayUrl.ToString();
+        }
+    }
+
+    [Parameter]
+    public EventCallback<RelayConnection> Connect { get; set; }
+
+    [Parameter]
+    public EventCallback<RelayConnection> Disconnect { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _relay.Communicator.MessageReceived.Subscribe(_ =>
+        {
+            StateHasChanged();
+        });
+
+        base.OnInitialized();
+    }
+
+    private async Task OnConnect()
+    {
+        _selectedRelayUrl = SanitizeUrl(_selectedRelayUrl);
+        await _relay.Connect(_selectedRelayUrl);
+
+        if (Connect.HasDelegate)
+        {
+            await Connect.InvokeAsync(_relay);
+        }
+    }
+
+    private async Task OnDisconnect()
+    {
+        await Relay.Disconnect();
+
+        if (Disconnect.HasDelegate)
+        {
+            await Disconnect.InvokeAsync(_relay);
+        }
+    }
+
+    private static string SanitizeUrl(string? relayUrl)
+    {
+        relayUrl = (relayUrl ?? string.Empty).Replace(" ", string.Empty).Trim().TrimEnd('/');
+        return relayUrl;
+    }
+
+}

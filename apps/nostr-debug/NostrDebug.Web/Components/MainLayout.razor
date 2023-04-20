@@ -1,6 +1,5 @@
-﻿@using BlazorMonaco.Editor
-@inherits LayoutComponentBase
-@inject RelayConnection NostrRelay
+﻿@inherits LayoutComponentBase
+@inject RelayList Relays
 
 <div class="container">
     <div class="siteheader">
@@ -12,16 +11,20 @@
         
         <a class="m-left-auto m-r-2 clear-link cursor-hand menu-link" style="line-height: 44px" @onclick="OnDisplayRelayDialog">
             
-            @if (_isRelayConnected)
+            @if (Relays.AreAllConnected && Relays.IsAnyConnected)
             {
                 <FluentIcon style="vertical-align: middle" Name="@FluentIcons.CloudCheckmark" Size="@IconSize.Size24" Variant="@IconVariant.Regular" Color="@Color.Success" />
+            }
+            else if (!Relays.AreAllConnected && Relays.IsAnyConnected)
+            {
+                <FluentIcon style="vertical-align: middle" Name="@FluentIcons.CloudCheckmark" Size="@IconSize.Size24" Variant="@IconVariant.Regular" Color="@Color.Warning" />
             }
             else
             {
                 <FluentIcon style="vertical-align: middle" Name="@FluentIcons.CloudDismiss" Size="@IconSize.Size24" Variant="@IconVariant.Regular" Color="@Color.Error" />
             }
             
-            <span class="m-l">Relay</span>
+            <span class="m-l">Relays</span>
 
         </a>
 
@@ -60,7 +63,6 @@
 
 @code {
     private FluentDialog? _relayDialog;
-    private bool _isRelayConnected;
 
     private ErrorBoundary? _errorBoundary;
 
@@ -71,10 +73,8 @@
     
     protected override async Task OnInitializedAsync()
     {
-        _isRelayConnected = NostrRelay.IsConnected;
-        NostrRelay.ConnectionStream.Subscribe(connected =>
+        Relays.ConnectionStream.Subscribe(connected =>
         {
-            _isRelayConnected = connected;
             StateHasChanged();
         });
 

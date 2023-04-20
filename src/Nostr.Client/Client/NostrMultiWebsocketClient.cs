@@ -42,6 +42,11 @@ namespace Nostr.Client.Client
         public NostrClientStreams Streams { get; } = new();
 
         /// <summary>
+        /// Registered clients
+        /// </summary>
+        public IReadOnlyCollection<NostrWebsocketClient> Clients => _clients.ToArray();
+
+        /// <summary>
         /// Send message to all communicators/relays
         /// </summary>
         public void Send<T>(T request)
@@ -64,11 +69,6 @@ namespace Nostr.Client.Client
             found.Send(request);
             return true;
         }
-
-        /// <summary>
-        /// Registered clients
-        /// </summary>
-        public IReadOnlyCollection<NostrWebsocketClient> Clients => _clients.ToArray();
 
         public void Dispose()
         {
@@ -108,6 +108,7 @@ namespace Nostr.Client.Client
             // forward all streams
             ForwardStream(client, client.Streams.EventStream, Streams.EventSubject);
             ForwardStream(client, client.Streams.NoticeStream, Streams.NoticeSubject);
+            ForwardStream(client, client.Streams.OkStream, Streams.OkSubject);
             ForwardStream(client, client.Streams.EoseStream, Streams.EoseSubject);
             ForwardStream(client, client.Streams.UnknownMessageStream, Streams.UnknownMessageSubject);
             ForwardStream(client, client.Streams.UnknownRawStream, Streams.UnknownRawSubject);
@@ -145,6 +146,32 @@ namespace Nostr.Client.Client
         public NostrWebsocketClient? FindClient(string communicatorName)
         {
             return _clients.FirstOrDefault(x => x.Communicator.Name == communicatorName);
+        }
+
+        /// <summary>
+        /// Find all registered clients by a given communicator name.
+        /// Returns empty collection if not found. 
+        /// </summary>
+        public IReadOnlyCollection<NostrWebsocketClient> FindClients(string communicatorName)
+        {
+            return _clients.Where(x => x.Communicator.Name == communicatorName).ToArray();
+        }
+
+        /// <summary>
+        /// Find registered client by a given communicator.
+        /// Returns null if not found. 
+        /// </summary>
+        public NostrWebsocketClient? FindClient(INostrCommunicator communicator)
+        {
+            return _clients.FirstOrDefault(x => x.Communicator == communicator);
+        }
+
+        /// <summary>
+        /// Return true if client is registered 
+        /// </summary>
+        public bool Contains(NostrWebsocketClient client)
+        {
+            return _clients.Any(x => x == client);
         }
 
         private void ForwardStream<T>(NostrWebsocketClient client, IObservable<T> source, IObserver<T> target)

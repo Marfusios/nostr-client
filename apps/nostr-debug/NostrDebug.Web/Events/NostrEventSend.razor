@@ -3,7 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Nostr.Client.Messages;
 @using Nostr.Client.Messages.Mutable
-@inject RelayConnection NostrRelay
+@inject RelayList Relays
 @inject EventStorage EventStorage;
 @implements IDisposable
 
@@ -51,9 +51,9 @@
 
     protected override void OnInitialized()
     {
-        _websocketHandlerOkData = NostrRelay.Client.Streams.OkStream
+        _websocketHandlerOkData = Relays.Client.Streams.OkStream
             .Subscribe(HandleOk);
-        _websocketHandlerNoticeData = NostrRelay.Client.Streams.NoticeStream
+        _websocketHandlerNoticeData = Relays.Client.Streams.NoticeStream
             .Subscribe(HandleNotice);
 
         base.OnInitialized();
@@ -81,6 +81,6 @@
         _sendingEventId = Event.Id;
         var ev = Event.ToEvent();
         EventStorage.Store(ev);
-        NostrRelay.Client.Send(new NostrEventRequest(ev));
+        Relays.Client.Send(new NostrEventRequest(ev));
     }
 }

@@ -1,45 +1,18 @@
 ﻿@page "/relay"
-@inject RelayConnection NostrRelay
+@inject RelayList Relays
 
-<Stack Orientation="Orientation.Vertical" VerticalGap="40">
+<Stack Orientation="Orientation.Vertical" VerticalGap="10">
 
-    <PageHeader Title="Relay" Subtitle="Connect to any Nostr relay"></PageHeader>
-
-    <Stack Orientation="Orientation.Horizontal" HorizontalGap="20">
-        
-        @if (NostrRelay.IsConnected)
-        {
-            <FluentIcon Name="@FluentIcons.Globe" Size="@IconSize.Size32" Variant="@IconVariant.Regular" Color="@Color.Success" style="align-self: end" />
-        }
-        else
-        {
-            <FluentIcon Name="@FluentIcons.Globe" Size="@IconSize.Size32" Variant="@IconVariant.Regular" Color="@Color.Error" style="align-self: end" />
-        }
-
-        <FluentCombobox Items="@RelayConnection.DefaultRelays" @bind-Value="_selectedRelayUrl" Disabled="@NostrRelay.IsConnecting"></FluentCombobox>
+    <PageHeader Title="Relays" Subtitle="Connect to any Nostr relay"></PageHeader>
     
-        @if (NostrRelay.IsConnecting)
-        {
-            <FluentButton Appearance="Appearance.Neutral" style="align-self: end" @onclick="OnDisconnect">
-                Disconnect
-                <FluentIcon Name="@FluentIcons.CloudDismiss" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
-            </FluentButton>
-        }
-        else
-        {
-            <FluentButton Appearance="Appearance.Accent" style="align-self: end" @onclick="OnConnect">
-                Connect
-                <FluentIcon Name="@FluentIcons.CloudCheckmark" Slot="start" Size="@IconSize.Size16" Variant="IconVariant.Regular" Color="Color.Fill" />
-            </FluentButton>
-        }
-
-    </Stack>
+    <div style="margin-bottom: 10px"></div>
+    
+    @foreach (var relay in Relays.Relays)
+    {
+        <RelaySelector Relay="relay" Connect="OnConnect"></RelaySelector>
+    }
 
     <div>
-        <div>
-            <pre>Received messages: @NostrRelay.ReceivedMessagesCount</pre>
-        </div>
-        
         <h4>History</h4>
 
         <ul>
@@ -55,31 +28,17 @@
 </Stack>
 
 @code {
-    private string _selectedRelayUrl = string.Empty;
     private readonly List<string> _history = new();
 
     protected override void OnInitialized()
     {
-        _selectedRelayUrl = NostrRelay.RelayUrl;
-
-        NostrRelay.HistoryStream.Subscribe(OnHistory);
-        NostrRelay.Communicator.MessageReceived.Subscribe(_ =>
-        {
-            StateHasChanged();
-        });
-
+        Relays.HistoryStream.Subscribe(OnHistory);
         base.OnInitialized();
     }
 
-    private async Task OnConnect()
+    private void OnConnect(RelayConnection relay)
     {
-        _selectedRelayUrl = _selectedRelayUrl.Replace(" ", string.Empty).Trim();
-        await NostrRelay.Connect(_selectedRelayUrl);
-    }
-
-    private async Task OnDisconnect()
-    {
-        await NostrRelay.Disconnect();
+        Relays.Connect(relay);
     }
 
     private void OnHistory(string item)
@@ -87,5 +46,4 @@
         _history.Add(item);
         StateHasChanged();
     }
-
 }

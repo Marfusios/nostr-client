@@ -1,4 +1,4 @@
-﻿@inject RelayConnection NostrRelay
+﻿@inject RelayList Relays
 @inject EventStorage EventStorage;
 @using System.Reactive.Linq
 @using BTCPayServer.Lightning
@@ -65,7 +65,7 @@
 
     protected override void OnInitialized()
     {
-        _websocketHandlerEvents = NostrRelay.Client.Streams.EventStream
+        _websocketHandlerEvents = Relays.Client.Streams.EventStream
             .Buffer(TimeSpan.FromSeconds(1))
             .Subscribe(HandleEvent);
 
@@ -74,6 +74,7 @@
 
     private void HandleEvent(IList<NostrEventResponse> response)
     {
+        Console.WriteLine($"Receiver data {response.Count}");
         var events = response
             .Where(x => x.Event != null);
         foreach (var evView in events)

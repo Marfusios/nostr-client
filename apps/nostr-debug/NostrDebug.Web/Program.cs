@@ -13,7 +13,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 LibraryConfiguration config = new(ConfigurationGenerator.GetIconConfiguration(), ConfigurationGenerator.GetEmojiConfiguration());
 builder.Services.AddFluentUIComponents(config);
 
-builder.Services.AddSingleton<RelayConnection>();
+builder.Services.AddSingleton<RelayList>();
 builder.Services.AddSingleton<EventStorage>();
 
 await builder.Build().RunAsync();
