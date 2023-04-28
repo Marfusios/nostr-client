@@ -194,7 +194,10 @@ namespace Nostr.Client.Messages
             return publicKey.IsHexSignatureValid(Sig, GetOrComputeId());
         }
 
-        public NostrEncryptedDirectEvent EncryptDirect(NostrPrivateKey sender, NostrPublicKey receiver)
+        /// <summary>
+        /// Encrypt event into direct message event (kind 4)
+        /// </summary>
+        public NostrEncryptedEvent EncryptDirect(NostrPrivateKey sender, NostrPublicKey receiver)
         {
             var receiverPubkey = receiver.Hex;
             var tagsWithReceiver = Tags ?? new NostrEventTags();
@@ -202,7 +205,21 @@ namespace Nostr.Client.Messages
                 tagsWithReceiver = tagsWithReceiver.DeepClone(NostrEventTag.Profile(receiverPubkey));
 
             var clone = DeepClone(null, null, sender.Hex, tagsWithReceiver);
-            return NostrEncryptedDirectEvent.Encrypt(clone, sender);
+            return NostrEncryptedEvent.EncryptDirectMessage(clone, sender);
+        }
+
+        /// <summary>
+        /// Encrypt event, kind will be taken from the given event or can be overriden by the parameter
+        /// </summary>
+        public NostrEncryptedEvent Encrypt(NostrPrivateKey sender, NostrPublicKey receiver, NostrKind? kind = null)
+        {
+            var receiverPubkey = receiver.Hex;
+            var tagsWithReceiver = Tags ?? new NostrEventTags();
+            if (!tagsWithReceiver.ContainsProfile(receiverPubkey))
+                tagsWithReceiver = tagsWithReceiver.DeepClone(NostrEventTag.Profile(receiverPubkey));
+
+            var clone = DeepClone(null, null, sender.Hex, tagsWithReceiver);
+            return NostrEncryptedEvent.Encrypt(clone, sender, kind);
         }
 
         private byte[] ComputeIdBytes()

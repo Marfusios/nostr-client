@@ -4,11 +4,11 @@ using Nostr.Client.Utils;
 
 namespace Nostr.Client.Messages.Direct
 {
-    public class NostrEncryptedDirectEvent : NostrEvent
+    public class NostrEncryptedEvent : NostrEvent
     {
         private const string IvSeparator = "?iv=";
 
-        public NostrEncryptedDirectEvent(string? content, NostrEventTags? tags)
+        public NostrEncryptedEvent(string? content, NostrEventTags? tags)
         {
             Content = content;
             TryExtractContent(content);
@@ -26,6 +26,9 @@ namespace Nostr.Client.Messages.Direct
         [JsonIgnore]
         public string? RecipientPubkey { get; private set; }
 
+        /// <summary>
+        /// Decrypt content text by the given private key
+        /// </summary>
         public string? DecryptContent(NostrPrivateKey privateKey)
         {
             if (EncryptedContent == null)
@@ -58,7 +61,18 @@ namespace Nostr.Client.Messages.Direct
             return decryptedText;
         }
 
-        public static NostrEncryptedDirectEvent Encrypt(NostrEvent ev, NostrPrivateKey sender)
+        /// <summary>
+        /// Encrypt event, kind will be set to '4 - DirectMessage'
+        /// </summary>
+        public static NostrEncryptedEvent EncryptDirectMessage(NostrEvent ev, NostrPrivateKey sender)
+        {
+            return Encrypt(ev, sender, NostrKind.EncryptedDm);
+        }
+
+        /// <summary>
+        /// Encrypt event, kind will be taken from the given event or can be overriden
+        /// </summary>
+        public static NostrEncryptedEvent Encrypt(NostrEvent ev, NostrPrivateKey sender, NostrKind? kind = null)
         {
             var recipientPubkeyHex = ev.Tags?.FindFirstTagValue(NostrEventTag.ProfileIdentifier);
             if (recipientPubkeyHex == null)
@@ -71,9 +85,9 @@ namespace Nostr.Client.Messages.Direct
             var encrypted = NostrEncryption.EncryptBase64(plainText, sharedKey);
             var encryptedContent = $"{encrypted.Text}{IvSeparator}{encrypted.Iv}";
 
-            return new NostrEncryptedDirectEvent(encryptedContent, ev.Tags)
+            return new NostrEncryptedEvent(encryptedContent, ev.Tags)
             {
-                Kind = NostrKind.EncryptedDm,
+                Kind = kind ?? ev.Kind,
                 Pubkey = sender.DerivePublicKey().Hex,
                 CreatedAt = ev.CreatedAt,
                 Content = encryptedContent

@@ -47,7 +47,7 @@ namespace Nostr.Client.Sample.Console
 
             events
                 .Select(x => x.Event!)
-                .OfType<NostrEncryptedDirectEvent>()
+                .OfType<NostrEncryptedEvent>()
                 .Subscribe(x =>
                 {
                     Log.Information("DM message: {content}, from {from} to {to}", x.EncryptedContent, x.Pubkey?[..4],

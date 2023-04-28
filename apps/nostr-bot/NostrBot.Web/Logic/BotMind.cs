@@ -104,7 +104,7 @@ namespace NostrBot.Web.Logic
                 return;
             }
 
-            if (response.Event is NostrEncryptedDirectEvent dm)
+            if (response.Event is NostrEncryptedEvent dm)
             {
                 await OnDirectMessage(response, dm);
                 return;
@@ -204,7 +204,7 @@ namespace NostrBot.Web.Logic
             Log.Debug("[{relay}] AI public reply sent", response.CommunicatorName);
         }
 
-        private async Task OnDirectMessage(NostrEventResponse response, NostrEncryptedDirectEvent dm)
+        private async Task OnDirectMessage(NostrEventResponse response, NostrEncryptedEvent dm)
         {
             var decryptedMessage = dm.DecryptContent(_botPrivateKey);
 

@@ -42,7 +42,7 @@ namespace Nostr.Client.Json
                 {
                     NostrKind.Metadata => typeof(NostrMetadataEvent),
                     NostrKind.Contacts => typeof(NostrContactEvent),
-                    NostrKind.EncryptedDm => typeof(NostrEncryptedDirectEvent),
+                    NostrKind.EncryptedDm => typeof(NostrEncryptedEvent),
                     NostrKind.Zap => typeof(NostrZapReceiptEvent),
                     _ => typeof(NostrEvent)
                 };
