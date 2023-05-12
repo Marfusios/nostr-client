@@ -42,6 +42,7 @@ namespace NostrBot.Web
                 services.AddEndpointsApiExplorer();
                 services.AddSwaggerGen();
 
+                services.AddDbContextFactory<BotContext>();
                 services.AddDbContext<BotContext>();
                 services.AddSingleton<BotStorage>();
                 services.AddSingleton(_ => new OpenAIClient(new OpenAIAuthentication(openAiConfig.ApiKey, openAiConfig.Organization)));
@@ -76,6 +77,7 @@ namespace NostrBot.Web
 
                 Log.Information("Starting web application");
                 app.Run();
+                Log.Information("Exiting web application");
             }
             catch (Exception ex)
             {

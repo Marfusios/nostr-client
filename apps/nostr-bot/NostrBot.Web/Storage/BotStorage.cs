@@ -6,24 +6,25 @@ namespace NostrBot.Web.Storage
 {
     public class BotStorage
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IDbContextFactory<BotContext> _contextFactory;
 
-        public BotStorage(IServiceProvider serviceProvider)
+        public BotStorage(IDbContextFactory<BotContext> contextFactory)
         {
-            _serviceProvider = serviceProvider;
+            _contextFactory = contextFactory;
         }
 
         public async Task<bool> IsProcessed(NostrEvent ev)
         {
-            using var _ = ResolveContext(out var context);
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
             return await context.ProcessedEvents
+                .AsNoTracking()
                 .AnyAsync(x => x.NostrEventId == ev.Id);
         }
 
         public async Task Store(string contextId, NostrEventResponse response, NostrEvent ev, string? generatedReply, string? eventContent, string? secondaryContextId)
         {
-            using var _ = ResolveContext(out var context);
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
             var processedEvent = new ProcessedEvent
             {
@@ -48,18 +49,13 @@ namespace NostrBot.Web.Storage
 
         public async Task<ProcessedEvent[]> GetHistoryForContext(string contextId, string? secondaryContextId)
         {
-            using var _ = ResolveContext(out var context);
+            await using var context = await _contextFactory.CreateDbContextAsync();
             return await context.ProcessedEvents
+                .AsNoTracking()
                 .Where(x => x.ReplyContextId == contextId || (x.ReplySecondaryContextId != null && x.ReplySecondaryContextId == secondaryContextId))
                 .OrderByDescending(x => x.Created)
+                .Take(33)
                 .ToArrayAsync();
-        }
-
-        private IDisposable ResolveContext(out BotContext context)
-        {
-            var scope = _serviceProvider.CreateScope();
-            context = scope.ServiceProvider.GetRequiredService<BotContext>();
-            return scope;
         }
     }
 }

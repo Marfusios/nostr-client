@@ -13,7 +13,6 @@ using NostrBot.Web.Utils;
 using OpenAI;
 using Serilog;
 using OpenAI.Chat;
-using OpenAI.Models;
 using Nostr.Client.Messages.Mutable;
 
 namespace NostrBot.Web.Logic
@@ -263,7 +262,6 @@ namespace NostrBot.Web.Logic
                 frequencyPenalty: _openAiConfig.FrequencyPenalty
                 );
             var result = await _openAi.ChatEndpoint.GetCompletionAsync(chatRequest);
-
             var aiReply = string.Join(Environment.NewLine, result.Choices.Select(x => x.Message.Content));
 
             Log.Debug("[{relay}] AI reply: {reply}", response.CommunicatorName, aiReply);
@@ -359,9 +357,16 @@ namespace NostrBot.Web.Logic
                 return Array.Empty<ChatPrompt>();
             }
 
-            foreach (var historicalEvent in historicalEvents.ToArray())
+            var additionalPubkeys = historicalEvents.Select(x => x.NostrEventPubkey).Where(x => x != null).Distinct().ToArray();
+            var additionalTagP = historicalEvents.Select(x => x.NostrEventTagP).Where(x => x != null).Distinct().ToArray();
+
+            foreach (var additionalPubkey in additionalPubkeys)
             {
-                await LoadAdditionalHistory(historicalEvent, historicalEvents);
+                await LoadAdditionalHistory(additionalPubkey, contextId, historicalEvents);
+            }
+            foreach (var additionalPubkey in additionalTagP)
+            {
+                await LoadAdditionalHistory(additionalPubkey, contextId, historicalEvents);
             }
 
             var prompts = new List<ChatPromptTimed>();
@@ -397,16 +402,19 @@ namespace NostrBot.Web.Logic
             return orderedPrompts;
         }
 
-        private async Task LoadAdditionalHistory(ProcessedEvent ev, List<ProcessedEvent> events)
+        private async Task LoadAdditionalHistory(string? pubkey, string primaryContext, List<ProcessedEvent> events)
         {
-            var context = GenerateContextIdForPubkey(ev.NostrEventPubkey);
-            events.AddRange(await _storage.GetHistoryForContext(context, null));
-
-            if (string.IsNullOrWhiteSpace(ev.NostrEventTagP))
+            if (pubkey == null)
                 return;
 
-            var contextRef = GenerateContextIdForPubkey(ev.NostrEventTagP);
-            events.AddRange(await _storage.GetHistoryForContext(contextRef, null));
+            var context = GenerateContextIdForPubkey(pubkey);
+            if (context == primaryContext)
+            {
+                // already loaded, do nothing
+                return;
+            }
+
+            events.AddRange(await _storage.GetHistoryForContext(context, null));
         }
 
         private int CountTextTokens(string text)
