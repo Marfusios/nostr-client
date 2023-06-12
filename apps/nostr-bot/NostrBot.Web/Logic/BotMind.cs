@@ -463,9 +463,10 @@ namespace NostrBot.Web.Logic
             for (int i = 0; i < split.Length; i++)
             {
                 var word = split[i];
-                if (string.IsNullOrWhiteSpace(word) || !word.StartsWith("#[") || !word.EndsWith("]"))
+                var wordSanitized = SanitizeWord(word);
+                if (string.IsNullOrWhiteSpace(wordSanitized) || !wordSanitized.StartsWith("#[") || !wordSanitized.EndsWith("]"))
                     continue;
-                var indexStr = word.TrimStart('#').TrimStart('[').TrimEnd(']');
+                var indexStr = wordSanitized.TrimStart('#').TrimStart('[').TrimEnd(']');
                 if (!int.TryParse(indexStr, out int index))
                     continue;
                 if (tags.Count < index)
@@ -504,17 +505,30 @@ namespace NostrBot.Web.Logic
                 var word = split[i];
                 if (string.IsNullOrWhiteSpace(word))
                     continue;
-                var wordTrimmed = word
-                    .Trim('.', ',', ';', ':', '!', '\'', '"', '\\', '/',
-                        '{', '}', '(', ')', '[', ']', '@', '#');
-                if (!wordTrimmed.StartsWith("npub1"))
+                var wordSanitized = SanitizeWordFull(word);
+                if (!wordSanitized.StartsWith("npub1"))
                     continue;
-                var pubKey = NostrPublicKey.FromBech32(wordTrimmed);
+                var pubKey = NostrPublicKey.FromBech32(wordSanitized);
                 split[i] = $"#[{npubCounter}]";
                 tags.Add(new NostrEventTag(NostrEventTag.ProfileIdentifier, pubKey.Hex));
                 npubCounter++;
             }
             return string.Join(" ", split);
+        }
+
+        private static string SanitizeWordFull(string word)
+        {
+            var wordTrimmed = SanitizeWord(word)
+                .Trim('[', ']', '#');
+            return wordTrimmed;
+        }
+
+        private static string SanitizeWord(string word)
+        {
+            var wordTrimmed = word
+                .Trim('.', ',', ';', ':', '!', '\'', '"', '\\', '/',
+                    '{', '}', '(', ')', '@', '_', '-');
+            return wordTrimmed;
         }
 
         private ProcessedEvent[] LoadThreadAsProcessed(NostrEventResponse response)
