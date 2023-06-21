@@ -104,7 +104,8 @@
                            $"{NonNull("a", _filter.Authors)}" +
                            $"{NonNull("i", _filter.Ids)}" +
                            $"{NonNull("e", _filter.E)}" +
-                           $"{NonNull("p", _filter.P)}";
+                           $"{NonNull("p", _filter.P)}" +
+                           $"{NonNull("a", _filter.A)}";
         var newUrl = Navigation.GetUriWithQueryParameter("base64", _appliedQueryBase64);
         Navigation.NavigateTo(newUrl, false, replace);
     }

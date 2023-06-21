@@ -1,5 +1,6 @@
 ﻿@using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Components
+@inject RelayList Relays
 
 <Stack Orientation="Orientation.Vertical" VerticalGap="10">
     <Stack Orientation="Orientation.Horizontal" HorizontalGap="20">
@@ -13,7 +14,7 @@
             <FluentIcon Name="@FluentIcons.Globe" Size="@IconSize.Size32" Variant="@IconVariant.Regular" Color="@Color.Error" style="align-self: end" />
         }
 
-        <FluentCombobox Items="@RelayList.DefaultRelays" @bind-Value="_selectedRelayUrl" Disabled="@_relay.IsConnecting"></FluentCombobox>
+        <FluentCombobox Items="@Relays.RelaysToSelect" @bind-Value="_selectedRelayUrl" Disabled="@_relay.IsConnecting"></FluentCombobox>
 
         @if (_relay.IsConnecting)
         {

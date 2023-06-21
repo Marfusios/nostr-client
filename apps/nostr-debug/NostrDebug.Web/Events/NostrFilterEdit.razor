@@ -52,6 +52,10 @@
         <strong>Ids (P)</strong>
     </FluentTextArea>
     
+    <FluentTextArea style="width: 100%" Placeholder="coordinate in A tag" Resize="TextAreaResize.Vertical" @bind-Value="_aIdsText" @bind-Value:after="OnFilterChanged">
+        <strong>Coordinates (A)</strong>
+    </FluentTextArea>
+    
     <NostrFilterEditJsonDialog @ref="_filterJsonDialog" Applied="ChangeFilter"></NostrFilterEditJsonDialog>
 
 </Stack>
@@ -63,6 +67,7 @@
     private string? _idsText;
     private string? _eIdsText;
     private string? _pIdsText;
+    private string? _aIdsText;
     private int? _hoursSince;
     private int? _hoursUntil;
 
@@ -95,6 +100,7 @@
         _idsText = ConvertTextIdsBack(Filter.Ids);
         _eIdsText = ConvertTextIdsBack(Filter.E);
         _pIdsText = ConvertTextIdsBack(Filter.P);
+        _aIdsText = ConvertTextIdsBack(Filter.A);
 
         if (Filter.Since.HasValue)
             _hoursSince = (int)Filter.Since.Value.Subtract(DateTimeUtils.UtcNowOnlyHours()).TotalHours;
@@ -130,6 +136,7 @@
         Filter.Ids = ConvertTextIds(_idsText);
         Filter.E = ConvertTextIds(_eIdsText);
         Filter.P = ConvertTextIds(_pIdsText);
+        Filter.A = ConvertTextIds(_aIdsText);
     }
 
     private async Task SetSince(ChangeEventArgs args)

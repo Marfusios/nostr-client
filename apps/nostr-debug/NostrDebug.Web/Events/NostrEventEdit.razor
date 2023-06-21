@@ -320,6 +320,8 @@
     {
         foreach (var tag in _tags)
         {
+            if(!_tagValues.ContainsKey(tag))
+                continue;
             var values = _tagValues[tag];
             tag.AdditionalData = values
                 .OrderBy(x => x.Order)
@@ -342,10 +344,9 @@
             return;
         foreach (var tagImmutable in ev.Tags)
         {
-            var tag= NostrEventTagMutable.FromTag(tagImmutable);
+            var tag = NostrEventTagMutable.FromTag(tagImmutable);
             _tags.Add(tag);
-            if(tag.AdditionalData.Any())
-                _tagValues[tag] = new List<TagValue>();
+            _tagValues[tag] = new List<TagValue>();
             var counter = 0;
             foreach (var tagData in tag.AdditionalData)
             {

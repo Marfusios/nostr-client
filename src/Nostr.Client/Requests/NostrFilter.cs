@@ -33,6 +33,12 @@ namespace Nostr.Client.Requests
         public string[]? P { get; set; }
 
         /// <summary>
+        /// A list of coordinates to events in an "a" tag
+        /// </summary>
+        [JsonProperty("#a")]
+        public string[]? A { get; set; }
+
+        /// <summary>
         /// Events must be newer than this to pass
         /// </summary>
         public DateTime? Since { get; set; }

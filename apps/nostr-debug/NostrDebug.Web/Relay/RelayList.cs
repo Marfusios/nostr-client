@@ -1,13 +1,15 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Blazored.LocalStorage;
 using Nostr.Client.Client;
+using NostrDebug.Web.Utils;
 using Websocket.Client;
 
 namespace NostrDebug.Web.Relay
 {
     public class RelayList : IDisposable
     {
-        public static readonly HashSet<string> DefaultRelays = new(new[]{
+        private static readonly HashSet<string> DefaultRelays = new(new[]{
             "wss://nos.lol",
             "wss://relay.damus.io",
             "wss://nostr-pub.wellorder.net",
@@ -15,15 +17,22 @@ namespace NostrDebug.Web.Relay
             "wss://relay.snort.social"
         });
 
+        private static readonly string RelaysToSelectKey = "relays-to-select";
+
         private readonly ILogger<RelayConnection> _logger;
+        private readonly ISyncLocalStorageService _localStorage;
         private readonly HashSet<RelayConnection> _relays = new();
+        private readonly HashSet<string> _relaysToSelect = new();
 
         private readonly ReplaySubject<string> _historySubject = new(200);
         private readonly Subject<bool> _connectionSubject = new();
 
-        public RelayList(ILogger<RelayConnection> logger, ILogger<NostrWebsocketClient> loggerClient)
+        public RelayList(ILogger<RelayConnection> logger, ILogger<NostrWebsocketClient> loggerClient, ISyncLocalStorageService localStorage)
         {
             _logger = logger;
+            _localStorage = localStorage;
+
+            InitRelaysToSelect();
 
             Client = new NostrMultiWebsocketClient(loggerClient);
             AddNextRelay();
@@ -32,6 +41,8 @@ namespace NostrDebug.Web.Relay
         public NostrMultiWebsocketClient Client { get; }
 
         public IReadOnlyCollection<RelayConnection> Relays => _relays;
+
+        public IReadOnlyCollection<string> RelaysToSelect => _relaysToSelect;
 
         public bool IsConnecting => _relays.Any(x => x.IsConnecting);
 
@@ -62,6 +73,7 @@ namespace NostrDebug.Web.Relay
                 Client.RegisterCommunicator(relay.Communicator);
             }
 
+            StoreRelaysToSelect();
             AddNextRelay();
             return true;
         }
@@ -75,14 +87,38 @@ namespace NostrDebug.Web.Relay
             }
 
             var connectedRelays = _relays.Select(x => x.RelayUrl);
-            var notConnectedRelays = DefaultRelays.Select(x => new Uri(x)).Except(connectedRelays).ToArray();
-            var firstRelay = notConnectedRelays.FirstOrDefault()?.ToString() ?? DefaultRelays.First();
+            var notConnectedRelays = _relaysToSelect.Select(x => new Uri(x)).Except(connectedRelays).ToArray();
+            var firstRelay = notConnectedRelays.FirstOrDefault()?.ToString() ?? _relaysToSelect.First();
 
             var relay = new RelayConnection(_logger, new Uri(firstRelay));
             relay.HistoryStream.Subscribe(_historySubject);
             relay.ConnectionStream.Subscribe(_connectionSubject);
 
             _relays.Add(relay);
+        }
+
+        private void InitRelaysToSelect()
+        {
+            _relaysToSelect.AddRange(DefaultRelays);
+            var storedRelays = _localStorage.GetItem<string[]?>(RelaysToSelectKey);
+            if (storedRelays == null)
+                return;
+            _relaysToSelect.AddRange(storedRelays);
+        }
+
+        private void StoreRelaysToSelect()
+        {
+            if (!_relays.Any())
+                return;
+            var relaysToStore = _relays.Select(x => x.RelayUrl.ToString()).ToArray();
+            var storedRelays = _localStorage.GetItem<string[]?>(RelaysToSelectKey) ?? Array.Empty<string>();
+
+            var nonDefault = storedRelays
+                .Concat(relaysToStore)
+                .Select(x => x.TrimEnd('/'))
+                .Except(DefaultRelays)
+                .ToHashSet();
+            _localStorage.SetItem(RelaysToSelectKey, nonDefault.ToArray());
         }
     }
 }
