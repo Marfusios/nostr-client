@@ -6,6 +6,19 @@
     public static class NostrConverter
     {
         /// <summary>
+        /// Convert Bech32 string into hex byte array key
+        /// </summary>
+        public static byte[]? ToHexBytes(string? bech32, out string? hrp)
+        {
+            hrp = null;
+            if (string.IsNullOrWhiteSpace(bech32))
+                return Array.Empty<byte>();
+
+            Bech32.Decode(bech32, out hrp, out var decoded);
+            return decoded;
+        }
+
+        /// <summary>
         /// Convert Bech32 string into hex key
         /// </summary>
         public static string? ToHex(string? bech32, out string? hrp)
@@ -47,6 +60,17 @@
                 return hexKey;
 
             var hexArray = HexExtensions.ToByteArray(hexKey);
+            return ToBech32(hexArray, hrp);
+        }
+
+        /// <summary>
+        /// Convert hex byte array to Bech32 format, you need to provide hrp (prefix)
+        /// </summary>
+        public static string? ToBech32(byte[]? hexArray, string hrp)
+        {
+            if (hexArray == null)
+                return null;
+
             var npub = Bech32.Encode(hrp, hexArray);
             return npub;
         }
