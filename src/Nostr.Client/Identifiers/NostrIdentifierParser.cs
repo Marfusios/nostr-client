@@ -4,7 +4,7 @@ namespace Nostr.Client.Identifiers
 {
     public static class NostrIdentifierParser
     {
-        public static NostrIdentifier? Parse(string bech32)
+        public static NostrIdentifier? Parse(string? bech32)
         {
             var data = NostrConverter.ToHexBytes(bech32, out var hrp);
             if (data == null || !data.Any() || string.IsNullOrWhiteSpace(hrp))

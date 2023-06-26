@@ -1,5 +1,8 @@
 ﻿@page "/converter"
-@using Nostr.Client.Utils
+@page "/converter/{Bech32Key}"
+@using Nostr.Client.Identifiers
+@inject NavigationManager Navigation
+@implements IDisposable
 
 <Stack Orientation="Orientation.Vertical">
 
@@ -14,7 +17,7 @@
                VerticalGap="20" 
                HorizontalGap="20">
            
-            <FluentTextField Style="width: 100%" Placeholder="npub1xxx" ValueExpression="() => _bech32Key" Value="@_bech32Key" @oninput="Bech32Set">
+            <FluentTextField Style="width: 100%" Placeholder="npub1xxx" ValueExpression="() => Bech32Key" Value="@Bech32Key" @oninput="Bech32Set">
                 <FluentIcon Name="@FluentIcons.Key" Slot="start" Size="@IconSize.Size16" Color="Color.Neutral" />
                 <strong>Bech32 key</strong>
             </FluentTextField>
@@ -29,6 +32,66 @@
                 <strong>Hex key</strong>
             </FluentTextField>
         
+            <Stack Orientation="Orientation.Vertical" VerticalGap="0">
+                
+                <p>Parsed identifier ↓↓</p>
+
+                @if (_identifierKind != null)
+                {
+                    <p>
+                        <strong>Kind</strong>
+                        <div>@_identifierKind.ToString() (@((int)_identifierKind))</div>
+                    </p>
+                }
+
+                @if (_identifier != null)
+                {
+                    <p>
+                        <strong>Identifier</strong>
+                        <div>@_identifier</div>
+                    </p>
+                }
+                
+                @if (_identifierEventId != null)
+                {
+                    <p>
+                        <strong>Event</strong>
+                        <div>@_identifierEventId</div>
+                        <div><a class="clear-link" href="@ExternalLinks.GetLinkToEvent(_identifierEventId)" target="_blank">@ExternalLinks.FormatToNote(_identifierEventId)</a></div>
+                    </p>
+                }
+
+                @if (_identifierPubkey != null)
+                {
+                    <p>
+                        <strong>Author</strong>
+                        <div>@_identifierPubkey</div>
+                        <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(_identifierPubkey)" target="_blank">@ExternalLinks.FormatToNpub(_identifierPubkey)</a></div>
+                    </p>
+                }
+
+                @if (_identifierRelay != null)
+                {
+                    <p>
+                        <strong>Relay</strong>
+                        <div>@_identifierRelay</div>
+                    </p>
+                }
+                
+                @if (_identifierRelays != null)
+                {
+                    <p>
+                        <strong>Relays</strong>
+                        @foreach (var relay in _identifierRelays)
+                        {
+                            <div>@relay</div>
+                        }
+                    </p>
+                }
+                
+
+            </Stack>
+
         </Stack>
     </div>
 
@@ -47,21 +110,42 @@
     };
 
     string? _prefix = "npub";
-    string? _bech32Key;
     string? _hexKey;
+
+    string? _identifier;
+    string? _identifierRelay;
+    string[]? _identifierRelays;
+    string? _identifierPubkey;
+    string? _identifierEventId;
+    NostrKind? _identifierKind;
+
+    [Parameter]
+    public string? Bech32Key { get; set; }
+
+    public void Dispose()
+    {
+    }
+
+    protected override void OnInitialized()
+    {
+        Bech32Set(new ChangeEventArgs { Value = Bech32Key });
+    }
 
     private void Bech32Set(ChangeEventArgs args)
     {
         try
         {
-            _bech32Key = (string?)args.Value;
-            _hexKey = NostrConverter.ToHex(_bech32Key, out var hrp);
+            Bech32Key = (string?)args.Value;
+            _hexKey = NostrConverter.ToHex(Bech32Key, out var hrp);
             _prefix = hrp ?? string.Empty;
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to parse bech32 key, error: {e.Message}");
         }
+
+        DisplayIdentifier();
+        SetUrlParam();
     }
 
     private void HexSet(ChangeEventArgs args)
@@ -69,12 +153,15 @@
         try
         {
             _hexKey = (string?)args.Value;
-            _bech32Key = NostrConverter.ToBech32(_hexKey, _prefix ?? "unknown");
+            Bech32Key = NostrConverter.ToBech32(_hexKey, _prefix ?? "unknown");
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to parse hex key, error: {e.Message}");
         }
+
+        DisplayIdentifier();
+        SetUrlParam();
     }
 
     private void PrefixSet(string? value)
@@ -82,11 +169,58 @@
         try
         {
             _prefix = value ?? string.Empty;
-            _bech32Key = NostrConverter.ToBech32(_hexKey, _prefix ?? "unknown");
+            Bech32Key = NostrConverter.ToBech32(_hexKey, _prefix ?? "unknown");
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to parse bech32 key, error: {e.Message}");
+        }
+
+        DisplayIdentifier();
+        SetUrlParam();
+    }
+
+    private void SetUrlParam()
+    {
+        var newUrl = $"{Navigation.BaseUri.TrimEnd('/')}/converter/{Bech32Key}";
+        Navigation.NavigateTo(newUrl, false, false);
+    }
+
+    private void DisplayIdentifier()
+    {
+        try
+        {
+            _identifierKind = null;
+            _identifier = _identifierRelay = _identifierPubkey = _identifierEventId = null;
+            _identifierRelays = null;
+
+            var parsed = NostrIdentifierParser.Parse(Bech32Key);
+            switch (parsed)
+            {
+                case NostrRelayIdentifier parsedRelay:
+                    _identifierRelay = parsedRelay.Relay;
+                    break;
+                case NostrProfileIdentifier parsedProfile:
+                    _identifierPubkey = parsedProfile.Pubkey;
+                    _identifierRelays = parsedProfile.Relays;
+                    break;
+                case NostrEventIdentifier parsedEvent:
+                    _identifierEventId = parsedEvent.EventId;
+                    _identifierPubkey = parsedEvent.Pubkey;
+                    _identifierRelays = parsedEvent.Relays;
+                    _identifierKind = parsedEvent.Kind;
+                    break;
+                case NostrAddressIdentifier parsedAddress:
+                    _identifier = parsedAddress.Identifier;
+                    _identifierPubkey = parsedAddress.Pubkey;
+                    _identifierRelays = parsedAddress.Relays;
+                    _identifierKind = parsedAddress.Kind;
+                    break;
+            }
+        }
+        catch (Exception)
+        {
+            // ignore
         }
     }
 }
