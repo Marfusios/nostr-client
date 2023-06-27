@@ -10,6 +10,8 @@ namespace Nostr.Client.Messages
     {
         public const string EventIdentifier = "e";
         public const string ProfileIdentifier = "p";
+        public const string Identifier = "d";
+        public const string CoordinatesIdentifier = "a";
 
         public NostrEventTag()
         {

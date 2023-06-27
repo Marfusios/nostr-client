@@ -184,8 +184,8 @@ namespace NostrBot.Web.Logic
             var aiReply = await RequestAiReply(response, contextId, secondaryContextId, message);
 
             var processedMessage = ExtractMentionsSafely(aiReply, out NostrEventTagsMutable tags);
-            tags.Add(new NostrEventTag("e", ev.Id ?? string.Empty));
-            tags.Add(new NostrEventTag("p", ev.Pubkey ?? string.Empty));
+            tags.Add(new NostrEventTag(NostrEventTag.ProfileIdentifier, ev.Pubkey ?? string.Empty));
+            tags.Add(new NostrEventTag(NostrEventTag.EventIdentifier, ev.Id ?? string.Empty));
 
             var replyEvent = new NostrEvent
             {

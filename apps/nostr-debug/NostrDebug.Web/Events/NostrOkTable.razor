@@ -5,7 +5,7 @@
 <div>
 
     <FluentDataGrid RowsData="@_receivedData.AsQueryable()" Pagination="@_pagination" GridTemplateColumns="0.4fr 0.4fr 0.2fr 0.2fr 1fr">
-        <TemplateColumn Title="Received" Sortable="true" SortBy="@_sortByDate" IsDefaultSort="SortDirection.Ascending">
+        <TemplateColumn Title="Received" Sortable="true" SortBy="@_sortByDate" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true">
             <span>@context.ReceivedTimestamp.ToLocalTime().ToString("T")</span>
         </TemplateColumn>
         <PropertyColumn Title="Relay" Property="@(p => p.Relay)" Sortable="true" />
@@ -27,7 +27,7 @@
         </TemplateColumn>
         <PropertyColumn Title="Message" Property="@(p => p.Message)" Sortable="true"/>
     </FluentDataGrid>
-    <FluentPaginator Value="@_pagination" />
+    <FluentPaginator State="@_pagination" />
 
     <Stack Orientation="Orientation.Horizontal" HorizontalGap="10" HorizontalAlignment="StackHorizontalAlignment.Right" VerticalAlignment="StackVerticalAlignment.Center">
         <FluentButton Appearance="Appearance.Neutral" @onclick="OnClearData">
