@@ -21,6 +21,22 @@ namespace Nostr.Client.Identifiers
             };
         }
 
+        public static bool TryParse(string? bech32, out NostrIdentifier? identifier)
+        {
+            identifier = null;
+            try
+            {
+                identifier = Parse(bech32);
+                return true;
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+
+            return false;
+        }
+
         internal static IReadOnlyCollection<KeyValuePair<byte, byte[]>> ParseTlv(byte[] tlvData)
         {
             var result = new List<KeyValuePair<byte, byte[]>>();

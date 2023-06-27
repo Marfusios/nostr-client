@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Nostr.Client.Client;
+using Nostr.Client.Identifiers;
 using Nostr.Client.Keys;
 using Nostr.Client.Messages;
 using Nostr.Client.Requests;
@@ -57,9 +58,18 @@ namespace NostrBot.Web.Logic
             if (split.Length < 1)
                 return "Invalid command format";
 
-            var targetEventId = split[1];
-            if (NostrConverter.TryToHex(targetEventId, out var targetEventIdHex, out _))
-                targetEventId = targetEventIdHex!;
+            var content = split[1];
+
+            // try to parse 'nevent1'
+            if (NostrIdentifierParser.TryParse(content, out var identifier) &&
+                identifier is NostrEventIdentifier identifierEvent)
+            {
+                content = identifierEvent.EventId;
+            }
+
+            // parse 'note1' into hex
+            if (NostrConverter.TryToHex(content, out var targetEventIdHex, out _))
+                content = targetEventIdHex!;
 
             var filter = new NostrFilter
             {
@@ -68,10 +78,10 @@ namespace NostrBot.Web.Logic
                     NostrKind.ShortTextNote,
                     NostrKind.EncryptedDm
                 },
-                Ids = new[] { targetEventId }
+                Ids = new[] { content }
             };
-            _client.Send(new NostrRequest(targetEventId, filter));
-            return $"Requesting event {targetEventId}";
+            _client.Send(new NostrRequest(content, filter));
+            return $"Requesting event {content}";
         }
     }
 }
