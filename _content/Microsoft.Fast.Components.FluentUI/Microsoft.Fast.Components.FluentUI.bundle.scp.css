@@ -1,3 +1,38 @@
+/* _content/Microsoft.Fast.Components.FluentUI/Components/Calendar/FluentCalendar.razor.rz.scp.css */
+fluent-calendar[b-anoh4cdagp]::part(year) {
+    margin-left: 0.25rem;
+}
+/* _content/Microsoft.Fast.Components.FluentUI/Components/DataGrid/Columns/ColumnBase.razor.rz.scp.css */
+/* Contains the title text and sort indicator, and expands to fill as much of the col width as it can */
+.col-title[b-p1u9ouqg85] {
+    display: flex; /* So that we can make col-title-text expand as much as possible, and still hide overflow with ellipsis */
+    min-width: 0px;
+    flex-grow: 1;
+    padding: 0;
+}
+
+/* If the column is sortable, its title is rendered as a button element for accessibility and to support navigation by tab */
+button.col-title[b-p1u9ouqg85] {
+    border: none;
+    background: none;
+    position: relative;
+    cursor: pointer;
+}
+
+.col-justify-center .col-title[b-p1u9ouqg85] {
+    justify-content: center;
+}
+
+.col-justify-end .col-title[b-p1u9ouqg85], .col-justify-right .col-title[b-p1u9ouqg85] {
+    flex-direction: row-reverse; /* For end-justified cols, the sort indicator should appear before the title text */
+}
+
+/* We put the column title text in its own element primarily so that it can use text-overflow: ellipsis */
+.col-title-text[b-p1u9ouqg85] {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
 /* _content/Microsoft.Fast.Components.FluentUI/Components/DataGrid/FluentDataGrid.razor.rz.scp.css */
 fluent-data-grid[b-rcbc18ov7b] {
     --col-gap: 1rem;
@@ -19,14 +54,14 @@ fluent-data-grid[b-rcbc18ov7b] {
     
 }
 
-.col-justify-end .col-options[b-rcbc18ov7b] {
+.col-justify-end .col-options[b-rcbc18ov7b], .col-justify-right .col-options[b-rcbc18ov7b] {
     left: unset;
-    right: 15px;
+    right: 0.2rem;
 }
 
-[dir=rtl] .col-justify-end .col-options[b-rcbc18ov7b] {
+[dir=rtl] .col-justify-end .col-options[b-rcbc18ov7b], [dir=rtl] .col-justify-right .col-options[b-rcbc18ov7b] {
     right: unset;
-    left: 15px;
+    left: 0.2rem;
 }
 
 [b-rcbc18ov7b] > fluent-data-grid-row > fluent-data-grid-cell.grid-cell-placeholder:after {
@@ -55,16 +90,21 @@ fluent-data-grid-cell[b-58jkn3no8z] {
     text-overflow: ellipsis;
 }
 
+.multiline-text[b-58jkn3no8z] {
+    white-space: inherit;
+    overflow: auto;
+}
+
 .column-header[b-58jkn3no8z] {
     display: flex;
     align-self: center;
     padding-inline: 0;
 }
 
-    .column-header.col-justify-end[b-58jkn3no8z] {
+    .column-header.col-justify-end[b-58jkn3no8z], .column-header.col-justify-right[b-58jkn3no8z] {
         width: 100%;
         padding: 0;
-        justify-content:end;
+        justify-content: end;
     }
 
     .column-header.col-justify-center[b-58jkn3no8z] {
@@ -78,11 +118,11 @@ fluent-data-grid-cell[b-58jkn3no8z] {
         padding-inline-end: 5px;
     }
 
-    .column-header.col-justify-end[b-58jkn3no8z]  .col-title-text {
+    .column-header.col-justify-end[b-58jkn3no8z]  .col-title-text, .column-header.col-justify-right[b-58jkn3no8z]  .col-title-text {
         text-align: end;
     }
 
-    .column-header.col-justify-end[b-58jkn3no8z]  .col-sort-button {
+    .column-header.col-justify-end[b-58jkn3no8z]  .col-sort-button, .column-header.col-justify-right[b-58jkn3no8z]  .col-sort-button {
         justify-content: end;
     }
 
@@ -90,7 +130,7 @@ fluent-data-grid-cell[b-58jkn3no8z] {
         text-align: center;
     }
 
-    .column-header.col-justify-end[b-58jkn3no8z]  .col-sort-button {
+    .column-header.col-justify-end[b-58jkn3no8z]  .col-sort-button, .column-header.col-justify-right[b-58jkn3no8z]  .col-sort-button {
         justify-content: end;
         text-align: end;
     }
@@ -104,7 +144,7 @@ fluent-data-grid-cell[b-58jkn3no8z] {
     justify-content: center;
 }
 
-.col-justify-end[b-58jkn3no8z]  .col-sort-button::part(control) {
+.col-justify-end[b-58jkn3no8z]  .col-sort-button::part(control), .col-justify-right[b-58jkn3no8z]  .col-sort-button::part(control) {
     justify-content: end;
 }
 
@@ -112,12 +152,12 @@ fluent-data-grid-cell[b-58jkn3no8z] {
     justify-self: center;
 }
 
-.col-justify-end[b-58jkn3no8z] {
+.col-justify-end[b-58jkn3no8z], .col-justify-right[b-58jkn3no8z] {
     justify-self: end;
     padding-inline-end: 20px;
 }
 
-    .col-justify-end .col-title[b-58jkn3no8z] {
+    .col-justify-end .col-title[b-58jkn3no8z], .col-justify-right .col-title[b-58jkn3no8z] {
         justify-content: end;
     }
 

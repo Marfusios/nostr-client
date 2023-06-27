@@ -9,10 +9,39 @@ export function init(gridElement) {
     };
     const keyDownHandler = event => {
         const columnOptionsElement = gridElement?.querySelector('.col-options');
-        if (columnOptionsElement && event.key === "Escape") {
-            gridElement.dispatchEvent(new CustomEvent('closecolumnoptions', { bubbles: true }));
+        if (columnOptionsElement) {
+            if (event.key === "Escape") {
+                gridElement.dispatchEvent(new CustomEvent('closecolumnoptions', { bubbles: true }));
+            }
+            columnOptionsElement.addEventListener(
+                "keydown",
+                (event) => {
+                    if (event.key === "ArrowRight" || event.key === "ArrowLeft" || event.key === "ArrowDown" || event.key === "ArrowUp") {
+                        event.stopPropagation();
+                    }
+                }
+            );
         }
     };
+
+    const cells = gridElement.querySelectorAll('[role="gridcell"]');
+    cells.forEach((cell) => {
+        cell.columnDefinition = {
+            columnDataKey: "",
+            cellInternalFocusQueue: true,
+            cellFocusTargetCallback: (cell) => {
+                return cell.children[0];
+            }
+        }
+        cell.addEventListener(
+            "keydown",
+            (event) => {
+                if (event.target.role !== "gridcell" && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
+                    event.stopPropagation();
+                }
+            }
+        );
+    });
 
     document.body.addEventListener('click', bodyClickHandler);
     document.body.addEventListener('mousedown', bodyClickHandler); // Otherwise it seems strange that it doesn't go away until you release the mouse button
@@ -26,6 +55,8 @@ export function init(gridElement) {
         }
     };
 }
+
+
 
 export function checkColumnOptionsPosition(gridElement) {
     const colOptions = gridElement?._rowItems[0] && gridElement?.querySelector('.col-options'); // Only match within *our* thead, not nested tables
@@ -71,7 +102,8 @@ function enableColumnResizing(gridElement) {
         const onMouseMove = (e) => requestAnimationFrame(() => {
             console.log('onMouseMove');
 
-            let horizontalScrollOffset = gridElement.offsetParent.offsetLeft;
+            let horizontalScrollOffset = gridElement.offsetLeft;
+            
             const width = (e.clientX) - (headerBeingResized.offsetLeft + horizontalScrollOffset);
 
             const column = columns.find(({ header }) => header === headerBeingResized);
