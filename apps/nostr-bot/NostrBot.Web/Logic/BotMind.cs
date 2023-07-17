@@ -114,6 +114,7 @@ namespace NostrBot.Web.Logic
 
         private bool ShouldIgnore(NostrEventResponse response)
         {
+            var ev = response.Event;
             var subscription = response.Subscription ?? string.Empty;
             if (subscription.StartsWith(AdhocDataCollectionSubscription))
             {
@@ -121,7 +122,7 @@ namespace NostrBot.Web.Logic
                 return true;
             }
 
-            var authorPubKey = ToNpub(response.Event?.Pubkey);
+            var authorPubKey = ToNpub(ev?.Pubkey);
             if (authorPubKey == _botPublicKey.Bech32)
             {
                 // ignore events from this bot
@@ -145,20 +146,27 @@ namespace NostrBot.Web.Logic
                 return false;
             }
 
-            var isRoot = response.Event?.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier) == null;
+            var isRoot = ev?.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier) == null;
             if (isRoot && !_config.ReactToRootEventsInGlobalFeed)
             {
                 // ignore root events
                 return true;
             }
 
-            if (!isRoot && !_config.ReactToThreadsInGlobalFeed)
+            var isLiveStream = ev?.Kind == NostrKind.LiveChatMessage;
+            if (isLiveStream && !_config.ReactToThreadsInLiveChat)
+            {
+                // ignore live chat messages
+                return true;
+            }
+
+            if (!isLiveStream && !isRoot && !_config.ReactToThreadsInGlobalFeed)
             {
                 // ignore events in threads
                 return true;
             }
 
-            var contentSafe = (response.Event?.Content ?? string.Empty)
+            var contentSafe = (ev?.Content ?? string.Empty)
                 .ToLowerInvariant()
                 .Split(" ");
             foreach (var keyword in _config.GlobalFeedKeywords)
