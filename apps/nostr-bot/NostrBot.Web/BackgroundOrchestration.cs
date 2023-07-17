@@ -51,7 +51,8 @@ namespace NostrBot.Web
                 {
                     Kinds = new[]
                     {
-                        NostrKind.ShortTextNote
+                        NostrKind.ShortTextNote,
+                        NostrKind.LiveChatMessage
                     },
                     Limit = 0
                 });
