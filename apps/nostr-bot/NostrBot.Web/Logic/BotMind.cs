@@ -187,6 +187,11 @@ namespace NostrBot.Web.Logic
             tags.Add(new NostrEventTag(NostrEventTag.ProfileIdentifier, ev.Pubkey ?? string.Empty));
             tags.Add(new NostrEventTag(NostrEventTag.EventIdentifier, ev.Id ?? string.Empty));
 
+            if (ev.Tags?.ContainsTag(NostrEventTag.CoordinatesIdentifier) == true)
+            {
+                tags.Add(new NostrEventTag(NostrEventTag.CoordinatesIdentifier, ev.Tags.FindFirstTagValue(NostrEventTag.CoordinatesIdentifier) ?? string.Empty));
+            }
+
             var replyEvent = new NostrEvent
             {
                 Kind = ev.Kind,
@@ -308,13 +313,17 @@ namespace NostrBot.Web.Logic
 
         private string GenerateContextIdForReplyOrRoot(NostrEvent ev)
         {
-            var fromTag = ev.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier);
+            var fromTag =
+                ev.Tags?.FindFirstTagValue(NostrEventTag.CoordinatesIdentifier) ??
+                ev.Tags?.FindFirstTagValue(NostrEventTag.EventIdentifier);
             return $"mention-id-{fromTag ?? ev.Id}";
         }
 
         private string GenerateContextIdForRoot(NostrEvent ev)
         {
-            return $"mention-id-{ev.Id}";
+            var rootId = ev.Tags?.FindFirstTagValue(NostrEventTag.CoordinatesIdentifier) ??
+                         ev.Id;
+            return $"mention-id-{rootId}";
         }
 
         private IEnumerable<ChatPrompt> IncludeBotDescription()

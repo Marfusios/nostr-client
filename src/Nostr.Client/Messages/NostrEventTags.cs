@@ -67,6 +67,12 @@ namespace Nostr.Client.Messages
             return tags.Any(x => x.AdditionalData.Any(y => y?.ToString() == tagValue));
         }
 
+        public bool ContainsTag(string? tagIdentifier)
+        {
+            var tags = Get(tagIdentifier);
+            return tags.Any();
+        }
+
         public NostrEventTags DeepClone(params NostrEventTag[] tags)
         {
             var allTags = this.Concat(tags).ToArray();

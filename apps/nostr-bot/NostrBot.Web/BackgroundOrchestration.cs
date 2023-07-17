@@ -18,7 +18,7 @@ namespace NostrBot.Web
 
         private IDisposable? _eventsSub;
 
-        public BackgroundOrchestration(IOptions<NostrConfig> nostrConfig, NostrListener listener, 
+        public BackgroundOrchestration(IOptions<NostrConfig> nostrConfig, NostrListener listener,
             NostrEventsQueue eventsQueue, BotMind botMind)
         {
             _listener = listener;
@@ -39,7 +39,8 @@ namespace NostrBot.Web
                 Kinds = new[]
                 {
                     NostrKind.ShortTextNote,
-                    NostrKind.EncryptedDm
+                    NostrKind.EncryptedDm,
+                    NostrKind.LiveChatMessage
                 },
                 P = new[] { botPubKey.Hex }
             });

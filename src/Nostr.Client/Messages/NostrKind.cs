@@ -21,6 +21,8 @@
 
         // nip-28 public chat reserved [45-49]
 
+        LiveChatMessage = 1311,
+
         Reporting = 1984,
 
         ZapRequest = 9734,
