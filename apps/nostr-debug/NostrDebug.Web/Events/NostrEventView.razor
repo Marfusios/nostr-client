@@ -4,6 +4,8 @@
 @using Newtonsoft.Json.Linq
 @using Nostr.Client.Json
 @using Nostr.Client.Messages.Zaps
+@inject ClipboardService Clipboard;
+@inject IJSRuntime JsRuntime
 
 <div>
     <PageHeader Title3="@_displayedEvent?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
@@ -83,15 +85,31 @@
         </p>
     }
 
-    @if (_eventJson == null)
-    {
-        <FluentButton Appearance="Appearance.Neutral" @onclick="OnDisplayJson">
-            <FluentIcon Name="@FluentIcons.WindowDevTools" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
-            Display JSON
+    <Stack Orientation="Orientation.Horizontal" HorizontalGap="10">
+        
+        @if (!_displayJson)
+        {
+            <FluentButton Appearance="Appearance.Neutral" @onclick="() => _displayJson = true">
+                <FluentIcon Name="@FluentIcons.WindowDevTools" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
+                Display JSON
+            </FluentButton>
+        }
+        
+        <FluentButton Appearance="Appearance.Neutral" @onclick="() => Clipboard.CopyToClipboard(_eventJson)">
+            <FluentIcon Name="@FluentIcons.Clipboard" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
+            Copy
         </FluentButton>
-    }
-    else
+
+        <FluentButton Appearance="Appearance.Neutral" @onclick="OnOpenPublisher" title="Open in a new tab">
+            <FluentIcon Name="@FluentIcons.WindowNew" Size="@IconSize.Size16" Color="Color.Neutral" />
+            Publish...
+        </FluentButton>
+        
+    </Stack>
+
+    @if (_displayJson)
     {
+        <hr/>
         <pre>@_eventJson</pre>
     }
 
@@ -100,6 +118,7 @@
 @code {
     private NostrEvent? _displayedEvent;
     private string? _eventJson;
+    private bool _displayJson;
 
     [Parameter]
     [Required]
@@ -109,8 +128,10 @@
     {
         if (Event == null || !Event.Equals(_displayedEvent))
         {
+            _displayJson = false;
             _eventJson = null;
             _displayedEvent = Event;
+            GenerateJson();
         }
 
         base.OnParametersSet();
@@ -132,7 +153,7 @@
         }
     }
 
-    private void OnDisplayJson()
+    private void GenerateJson()
     {
         if (_displayedEvent == null)
             return;
@@ -140,5 +161,14 @@
         var settings = NostrSerializer.Settings;
         settings.Formatting = Formatting.Indented;
         _eventJson = JsonConvert.SerializeObject(_displayedEvent, settings);
+    }
+    
+    private async Task OnOpenPublisher()
+    {
+        if (_displayedEvent == null)
+            return;
+
+        var link = Publisher.GetUrl(_displayedEvent);
+        await JsRuntime.InvokeVoidAsync("open", link, "_blank");
     }
 }

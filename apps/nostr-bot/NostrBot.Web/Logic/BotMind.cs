@@ -259,11 +259,11 @@ namespace NostrBot.Web.Logic
         {
             var userMessageProcessed = ApplyMentionsSafely(userMessage, response.Event?.Tags);
 
-            var chatPrompts = new List<ChatPrompt>();
+            var chatPrompts = new List<Message>();
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
             chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId, response));
-            chatPrompts.Add(new ChatPrompt("user", $"@{ToNpub(response.Event?.Pubkey)}: {userMessageProcessed}"));
+            chatPrompts.Add(new Message(Role.User, $"@{ToNpub(response.Event?.Pubkey)}: {userMessageProcessed}"));
 
             CircuitBreaker(chatPrompts);
 
@@ -293,7 +293,7 @@ namespace NostrBot.Web.Logic
             await TaskUtils.DelaySafely(TimeSpan.FromSeconds(secondsToWait), _stoppingToken);
         }
 
-        private void CircuitBreaker(List<ChatPrompt> chatPrompts)
+        private void CircuitBreaker(List<Message> chatPrompts)
         {
             var text = string.Join(Environment.NewLine, chatPrompts.Select(x => x.Content)).ToLowerInvariant();
             var textWords = text.Split(" ");
@@ -334,35 +334,35 @@ namespace NostrBot.Web.Logic
             return $"mention-id-{rootId}";
         }
 
-        private IEnumerable<ChatPrompt> IncludeBotDescription()
+        private IEnumerable<Message> IncludeBotDescription()
         {
             if (string.IsNullOrWhiteSpace(_config.BotDescription))
             {
-                return Array.Empty<ChatPrompt>();
+                return Array.Empty<Message>();
             }
 
             var description = $"{_config.BotDescription} Your identification is {_botPublicKey.Bech32}";
             return new[]
             {
-                new ChatPrompt("system", description)
+                new Message(Role.System, description)
             };
         }
 
-        private IEnumerable<ChatPrompt> IncludeBotWhois()
+        private IEnumerable<Message> IncludeBotWhois()
         {
             if (string.IsNullOrWhiteSpace(_config.BotWhois))
             {
-                return Array.Empty<ChatPrompt>();
+                return Array.Empty<Message>();
             }
 
             return new[]
             {
-                new ChatPrompt("user", "unknown: Who are you?"),
-                new ChatPrompt("assistant", _config.BotWhois)
+                new Message(Role.User, "unknown: Who are you?"),
+                new Message(Role.Assistant, _config.BotWhois)
             };
         }
 
-        private async Task<IEnumerable<ChatPrompt>> IncludeHistory(string contextId, string? secondaryContextId,
+        private async Task<IEnumerable<Message>> IncludeHistory(string contextId, string? secondaryContextId,
             NostrEventResponse response)
         {
             var historicalEvents = (await _storage.GetHistoryForContext(contextId, secondaryContextId)).ToList();
@@ -371,7 +371,7 @@ namespace NostrBot.Web.Logic
 
             if (!historicalEvents.Any())
             {
-                return Array.Empty<ChatPrompt>();
+                return Array.Empty<Message>();
             }
 
             var additionalPubkeys = historicalEvents.Select(x => x.NostrEventPubkey).Where(x => x != null).Distinct().ToArray();
@@ -408,8 +408,8 @@ namespace NostrBot.Web.Logic
                     break;
                 }
 
-                prompts.Add(new ChatPromptTimed(timestamp, new ChatPrompt("user", request)));
-                prompts.Add(new ChatPromptTimed(timestamp.AddMilliseconds(1), new ChatPrompt("assistant", reply)));
+                prompts.Add(new ChatPromptTimed(timestamp, new Message(Role.User, request)));
+                prompts.Add(new ChatPromptTimed(timestamp.AddMilliseconds(1), new Message(Role.Assistant, reply)));
             }
 
             var orderedPrompts = prompts
@@ -594,6 +594,6 @@ namespace NostrBot.Web.Logic
                 .ToArray();
         }
 
-        private record ChatPromptTimed(DateTime Timestamp, ChatPrompt Prompt);
+        private record ChatPromptTimed(DateTime Timestamp, Message Prompt);
     }
 }

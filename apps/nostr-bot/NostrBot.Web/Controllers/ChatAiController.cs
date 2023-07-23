@@ -25,9 +25,9 @@ namespace NostrBot.Web.Controllers
             //    _logger.LogInformation("Available model: {model}", model.ToString());
             //}
 
-            var chatPrompts = new List<ChatPrompt>
+            var chatPrompts = new List<Message>
             {
-                new("user", message)
+                new(Role.User, message)
             };
 
             var chatRequest = new ChatRequest(chatPrompts);

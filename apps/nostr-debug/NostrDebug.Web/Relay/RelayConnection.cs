@@ -52,7 +52,7 @@ namespace NostrDebug.Web.Relay
             _communicator.Dispose();
         }
 
-        public async Task<bool> Connect(string relayUrl)
+        public async Task<bool> Connect(string? relayUrl)
         {
             IsUsed = true;
             if (_communicator.IsRunning)
@@ -60,6 +60,7 @@ namespace NostrDebug.Web.Relay
                 return false;
             }
 
+            relayUrl ??= _communicator.Url.ToString();
             if (!Uri.TryCreate(relayUrl, UriKind.Absolute, out var safeUrl))
             {
                 return false;

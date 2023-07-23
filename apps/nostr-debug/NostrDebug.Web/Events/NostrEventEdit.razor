@@ -12,7 +12,11 @@
     
     <FluentToolbar Style="padding: 0">
         
-        <FluentButton @onclick="OnJsonEdit" Style="margin-left: 0">
+        <FluentButton @onclick="OnClear" Style="margin-left: 0">
+            <FluentIcon Name="@FluentIcons.Delete" Size="@IconSize.Size16" Color="Color.Neutral" />
+        </FluentButton>
+        
+        <FluentButton @onclick="OnJsonEdit">
             <FluentIcon Name="@FluentIcons.WindowDevEdit" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
             JSON edit
         </FluentButton>
@@ -325,7 +329,7 @@
             var values = _tagValues[tag];
             tag.AdditionalData = values
                 .OrderBy(x => x.Order)
-                .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                .Where(x => x.Value != null)
                 .Select(x => x.Value!)
                 .ToArray();
         }
@@ -368,6 +372,15 @@
         if (_eventDirectDialog == null)
             return;
         _eventDirectDialog.ShowEvent(Event.ToEvent(), _privateKeyStr, Event.Pubkey);
+    }
+
+    private async Task OnClear()
+    {
+        await ChangeEvent(new NostrEvent()
+        {
+            Kind = NostrKind.ShortTextNote,
+            CreatedAt = DateTime.UtcNow
+        });
     }
 
     private record TagValue(int Order)

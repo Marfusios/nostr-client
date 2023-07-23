@@ -1,4 +1,9 @@
 ﻿@page "/publisher"
+@using Nostr.Client.Messages.Mutable
+@using Newtonsoft.Json
+@using Nostr.Client.Json
+@using System.Text
+@inject NavigationManager Navigation
 
 <Stack Orientation="Orientation.Vertical">
 
@@ -6,8 +11,7 @@
 
     <div class="page-layout">
         
-        <NostrEventSend></NostrEventSend>
-        
+        <NostrEventSend @ref="_eventSend" EventSent="OnEventChanged"></NostrEventSend>
         <NostrOkTable></NostrOkTable>
 
     </div>
@@ -16,4 +20,75 @@
 
 @code
 {
+    private string? _appliedQueryBase64;
+    private NostrEventSend? _eventSend;
+    
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "base64")]
+    public string? EventBase64 { get; set; }
+    
+    public static string GetUrl(NostrEvent? evnt = null)
+    {
+        if (evnt == null)
+            return "/publisher";
+        var serialized = SerializeEvent(NostrEventMutable.FromEvent(evnt));
+        return $"/publisher?base64={serialized}";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+        
+        if (string.IsNullOrWhiteSpace(EventBase64))
+            return;
+
+        var deserialized = DeserializeEvent(EventBase64);
+        if (deserialized != null && _eventSend != null)
+            await _eventSend.ChangeEvent(deserialized.ToEvent());
+    }
+
+    private void OnEventChanged(NostrEventMutable ev)
+    {
+        SerializeEventToUrl(ev, false);
+    }
+
+    private void SerializeEventToUrl(NostrEventMutable ev, bool replace)
+    {
+        var serialized = SerializeEvent(ev);
+        if (serialized == _appliedQueryBase64)
+        {
+            // query param was changed from outside, do nothing
+            return;
+        }
+
+        _appliedQueryBase64 = serialized;
+        var newUrl = Navigation.GetUriWithQueryParameter("base64", _appliedQueryBase64);
+        Navigation.NavigateTo(newUrl, false, replace);
+    }
+    
+    private static string SerializeEvent(NostrEventMutable nostrEvent)
+    {
+        var serialized = JsonConvert.SerializeObject(nostrEvent, NostrSerializer.Settings);
+        var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(serialized));
+        return base64;
+    }
+
+    private static NostrEventMutable? DeserializeEvent(string? nostrEvent)
+    {
+        if (nostrEvent == null)
+            return null;
+
+        try
+        {
+            var filterSerialized = Encoding.UTF8.GetString(Convert.FromBase64String(nostrEvent));
+            var deserialized = JsonConvert.DeserializeObject<NostrEventMutable>(filterSerialized, NostrSerializer.Settings);
+            return deserialized;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to deserialize event, error: {e.Message}");
+            return null;
+        }
+    }
 }

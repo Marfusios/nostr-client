@@ -9,7 +9,7 @@
 
 <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="20">
 
-    <NostrEventEdit @bind-Event="Event"></NostrEventEdit>
+    <NostrEventEdit @ref="_eventEdit" @bind-Event="Event"></NostrEventEdit>
 
     <Stack Orientation="Orientation.Horizontal" VerticalGap="10">
         <FluentButton Appearance="Appearance.Accent" @onclick="OnSend">
@@ -32,6 +32,8 @@
     private IDisposable? _websocketHandlerOkData;
     private IDisposable? _websocketHandlerNoticeData;
 
+    private NostrEventEdit? _eventEdit;
+
     [Parameter]
     [Required]
     public NostrEventMutable Event { get; set; } = new()
@@ -42,6 +44,9 @@
 
     [Parameter]
     public EventCallback<NostrEventMutable> EventChanged { get; set; }
+    
+    [Parameter]
+    public EventCallback<NostrEventMutable> EventSent { get; set; }
 
     public void Dispose()
     {
@@ -49,6 +54,13 @@
         _websocketHandlerNoticeData?.Dispose();
     }
 
+    public async Task ChangeEvent(NostrEvent ev)
+    {
+        if (_eventEdit == null)
+            return;
+        await _eventEdit.ChangeEvent(ev);
+    }
+    
     protected override void OnInitialized()
     {
         _websocketHandlerOkData = Relays.Client.Streams.OkStream
@@ -75,12 +87,17 @@
         StateHasChanged();
     }
 
-    private void OnSend()
+    private async Task OnSend()
     {
         _isSending = true;
         _sendingEventId = Event.Id;
         var ev = Event.ToEvent();
         EventStorage.Store(ev);
         Relays.Client.Send(new NostrEventRequest(ev));
+        
+        if (EventSent.HasDelegate)
+        {
+            await EventSent.InvokeAsync(Event);
+        }
     }
 }

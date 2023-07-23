@@ -18,6 +18,7 @@ namespace NostrDebug.Web.Relay
         });
 
         private static readonly string RelaysToSelectKey = "relays-to-select";
+        private static readonly string RelaysConnectedKey = "relays-connected";
 
         private readonly ILogger<RelayConnection> _logger;
         private readonly ISyncLocalStorageService _localStorage;
@@ -35,7 +36,8 @@ namespace NostrDebug.Web.Relay
             InitRelaysToSelect();
 
             Client = new NostrMultiWebsocketClient(loggerClient);
-            AddNextRelay();
+            
+            InitConnectedRelays();
         }
 
         public NostrMultiWebsocketClient Client { get; }
@@ -78,6 +80,16 @@ namespace NostrDebug.Web.Relay
             return true;
         }
 
+        private bool ConnectPure(RelayConnection relay)
+        {
+            if (Client.FindClient(relay.Communicator) == null)
+            {
+                Client.RegisterCommunicator(relay.Communicator);
+            }
+            
+            return true;
+        }
+        
         private void AddNextRelay()
         {
             var nonUsedExists = _relays.Any(x => !x.IsUsed);
@@ -88,13 +100,18 @@ namespace NostrDebug.Web.Relay
 
             var connectedRelays = _relays.Select(x => x.RelayUrl);
             var notConnectedRelays = _relaysToSelect.Select(x => new Uri(x)).Except(connectedRelays).ToArray();
-            var firstRelay = notConnectedRelays.FirstOrDefault()?.ToString() ?? _relaysToSelect.First();
+            var firstRelayUrl = notConnectedRelays.FirstOrDefault()?.ToString() ?? _relaysToSelect.First();
 
-            var relay = new RelayConnection(_logger, new Uri(firstRelay));
+            CreateRelay(firstRelayUrl);
+        }
+
+        private RelayConnection CreateRelay(string relayUrl)
+        {
+            var relay = new RelayConnection(_logger, new Uri(relayUrl));
             relay.HistoryStream.Subscribe(_historySubject);
-            relay.ConnectionStream.Subscribe(_connectionSubject);
-
+            relay.ConnectionStream.Subscribe(x => OnRelayConnection(x, relay));
             _relays.Add(relay);
+            return relay;
         }
 
         private void InitRelaysToSelect()
@@ -104,6 +121,25 @@ namespace NostrDebug.Web.Relay
             if (storedRelays == null)
                 return;
             _relaysToSelect.AddRange(storedRelays);
+        }
+        
+        private void InitConnectedRelays()
+        {
+            var connectedRelays = _localStorage.GetItem<string[]?>(RelaysConnectedKey);
+            if (connectedRelays == null)
+            {
+                AddNextRelay();
+                return;
+            }
+
+            foreach (var connectedRelayUrl in connectedRelays)
+            {
+                var relay = CreateRelay(connectedRelayUrl);
+                ConnectPure(relay);
+                _ = relay.Connect(null);
+            }
+            
+            AddNextRelay();
         }
 
         private void StoreRelaysToSelect()
@@ -119,6 +155,20 @@ namespace NostrDebug.Web.Relay
                 .Except(DefaultRelays)
                 .ToHashSet();
             _localStorage.SetItem(RelaysToSelectKey, nonDefault.ToArray());
+        }
+
+        private void OnRelayConnection(bool connected, RelayConnection relay)
+        {
+            var connectedRelays = (_localStorage.GetItem<string[]?>(RelaysConnectedKey) ?? Array.Empty<string>())
+                .Select(x => x.TrimEnd('/'))
+                .ToHashSet();
+            var relayUrl = relay.RelayUrl.ToString().TrimEnd('/');
+            if (connected)
+                connectedRelays.Add(relayUrl);
+            else
+                connectedRelays.Remove(relayUrl);
+            _localStorage.SetItem(RelaysConnectedKey, connectedRelays.ToArray());
+            _connectionSubject.OnNext(connected);
         }
     }
 }

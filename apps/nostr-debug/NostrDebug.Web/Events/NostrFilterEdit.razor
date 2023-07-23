@@ -5,7 +5,11 @@
     
     <FluentToolbar Style="padding: 0">
 
-        <FluentButton @onclick="OnJsonEdit" Style="margin-left: 0">
+        <FluentButton @onclick="OnClear" Style="margin-left: 0">
+            <FluentIcon Name="@FluentIcons.Delete" Size="@IconSize.Size16" Color="Color.Neutral" />
+        </FluentButton>
+        
+        <FluentButton @onclick="OnJsonEdit">
             <FluentIcon Name="@FluentIcons.WindowDevEdit" Size="@IconSize.Size16" Color="Color.Neutral" Slot="start" />
             JSON edit
         </FluentButton>
@@ -36,26 +40,43 @@
         <strong>Limit</strong>
     </FluentNumberField>
 
-    <FluentTextArea style="width: 100%" Placeholder="hex or npub1" Resize="TextAreaResize.Vertical" @bind-Value="_authorsText" @bind-Value:after="OnFilterChanged">
-        <strong>Authors</strong>
-    </FluentTextArea>
+    <FluentTabs Style="width: 100%">
+        <FluentTab Style="padding-left: 0; margin-bottom: 10px">
+            <strong>Basic</strong>
+        </FluentTab>
+        <FluentTab>
+            <strong>Advanced</strong>
+        </FluentTab>
 
-    <FluentTextArea style="width: 100%" Placeholder="hex or note1" Resize="TextAreaResize.Vertical" @bind-Value="_idsText" @bind-Value:after="OnFilterChanged">
-        <strong>Ids</strong>
-    </FluentTextArea>
-
-    <FluentTextArea style="width: 100%" Placeholder="hex or note1 in E tag" Resize="TextAreaResize.Vertical" @bind-Value="_eIdsText" @bind-Value:after="OnFilterChanged">
-        <strong>Ids (E)</strong>
-    </FluentTextArea>
-
-    <FluentTextArea style="width: 100%" Placeholder="hex or npub1 in P tag" Resize="TextAreaResize.Vertical" @bind-Value="_pIdsText" @bind-Value:after="OnFilterChanged">
-        <strong>Ids (P)</strong>
-    </FluentTextArea>
+        <FluentTabPanel>
+            <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="10">
+                <FluentTextArea style="width: 100%" Placeholder="hex or npub1" Resize="TextAreaResize.Vertical" @bind-Value="_authorsText" @bind-Value:after="OnFilterChanged">
+                    <strong>Authors</strong>
+                </FluentTextArea>
     
-    <FluentTextArea style="width: 100%" Placeholder="coordinate in A tag" Resize="TextAreaResize.Vertical" @bind-Value="_aIdsText" @bind-Value:after="OnFilterChanged">
-        <strong>Coordinates (A)</strong>
-    </FluentTextArea>
-    
+                <FluentTextArea style="width: 100%" Placeholder="hex or note1" Resize="TextAreaResize.Vertical" @bind-Value="_idsText" @bind-Value:after="OnFilterChanged">
+                    <strong>Ids</strong>
+                </FluentTextArea>
+            </Stack>
+        </FluentTabPanel>
+        
+        <FluentTabPanel>
+            <Stack Orientation="Orientation.Vertical" HorizontalGap="0" VerticalGap="10">
+               <FluentTextArea style="width: 100%" Placeholder="hex or note1 in E tag" Resize="TextAreaResize.Vertical" @bind-Value="_eIdsText" @bind-Value:after="OnFilterChanged">
+                   <strong>Ids (E)</strong>
+               </FluentTextArea>
+   
+               <FluentTextArea style="width: 100%" Placeholder="hex or npub1 in P tag" Resize="TextAreaResize.Vertical" @bind-Value="_pIdsText" @bind-Value:after="OnFilterChanged">
+                   <strong>Ids (P)</strong>
+               </FluentTextArea>
+   
+               <FluentTextArea style="width: 100%" Placeholder="coordinate in A tag" Resize="TextAreaResize.Vertical" @bind-Value="_aIdsText" @bind-Value:after="OnFilterChanged">
+                   <strong>Coordinates (A)</strong>
+               </FluentTextArea> 
+            </Stack>
+        </FluentTabPanel>
+    </FluentTabs>
+
     <NostrFilterEditJsonDialog @ref="_filterJsonDialog" Applied="ChangeFilter"></NostrFilterEditJsonDialog>
 
 </Stack>
@@ -213,5 +234,13 @@
         if (_filterJsonDialog == null)
             return;
         await _filterJsonDialog.ShowFilter(Filter);
+    }
+
+    private async Task OnClear()
+    {
+        await ChangeFilter(new NostrFilter()
+        {
+            Kinds = new[] {NostrKind.ShortTextNote}
+        });
     }
 }
