@@ -7,6 +7,7 @@ body {
     font-family: var(--body-font);
     font-size: var(--type-ramp-base-font-size);
     line-height: var(--type-ramp-base-line-height);
+    background-color: transparent;
     margin: 0;
     height: 100%;
 }
@@ -25,11 +26,12 @@ body {
         "siteheader"
         "main";
     height: 100%;
+    background-color: var(--fill-color);
 }
 
 .siteheader {
     grid-area: siteheader;
-    background-color: #f7f7f7;
+    background-color: var(--neutral-layer-card-container);
     border-bottom: 1px solid #d6d5d5;
     justify-content: flex-start;
     height: 3.5rem;
@@ -78,6 +80,7 @@ body {
 .menu-link {
     padding-left: 10px;
     padding-right: 10px;
+    color: var(--accent-foreground-rest);
 }
 
     .menu-link:hover {
