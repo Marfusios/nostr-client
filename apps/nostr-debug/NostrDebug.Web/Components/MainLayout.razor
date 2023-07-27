@@ -1,7 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.Fast.Components.FluentUI.DesignTokens
+@inherits LayoutComponentBase
 @inject RelayList Relays
+@inject GlobalState GlobalState
+@inject BaseLayerLuminance BaseLayerLuminance
+@inject IJSRuntime JsRuntime
 
-<div class="container">
+<div class="container" @ref="_container">
     <div class="siteheader">
         <a class="logo" href="/">
             <p class="logo-text">
@@ -9,7 +13,7 @@
             </p>
         </a>
         
-        <a class="m-left-auto m-r-2 clear-link cursor-hand menu-link" style="line-height: 44px" @onclick="OnDisplayRelayDialog">
+        <a class="m-left-auto clear-link cursor-hand menu-link" style="line-height: 44px" @onclick="OnDisplayRelayDialog">
             
             @if (Relays.AreAllConnected && Relays.IsAnyConnected)
             {
@@ -27,9 +31,17 @@
             <span class="m-l">Relays</span>
 
         </a>
+        
+        <div class="menu-link" style="line-height: 44px">
+            <FluentSwitch @bind-Value="@_inDarkMode" @onchange="SwitchTheme" title="Switch theme">
+                <span class="label">Theme</span>
+                <span slot="unchecked-message">light</span>
+                <span slot="checked-message">dark</span>
+            </FluentSwitch>
+        </div>
 
         <div class="git-repo menu-link" style="line-height: 44px">
-            <a class="clear-link" href="https://github.com/marfusios/nostr-client-websocket" target="_blank">Github Repository</a>
+            <a class="clear-link" href="https://github.com/marfusios/nostr-client-websocket" target="_blank">Github</a>
         </div>
     </div>
     <div class="main">
@@ -62,9 +74,13 @@
 </FluentDialog>
 
 @code {
+    private ElementReference _container;
     private FluentDialog? _relayDialog;
 
     private ErrorBoundary? _errorBoundary;
+    private bool _inDarkMode;
+    private StandardLuminance _baseLayerLuminance = StandardLuminance.LightMode;
+    private IJSObjectReference? _jsModule;
 
     protected override void OnParametersSet()
     {
@@ -81,10 +97,21 @@
         await base.OnInitializedAsync();
     }
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
+        {
             _relayDialog!.Hide();
+
+            _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import",
+                "./Components/MainLayout.razor.js");
+
+            _inDarkMode = await _jsModule!.InvokeAsync<bool>("isDarkMode");
+
+            SwitchTheme();
+            StateHasChanged();
+        }
+            
     }
 
     private void OnDisplayRelayDialog()
@@ -94,9 +121,20 @@
 
     private void OnHideRelayDialog(DialogEventArgs? args)
     {
-        if (args?.Reason != null && args.Reason == "dismiss")
+        if (args?.Reason is "dismiss")
         {
             _relayDialog!.Hide();
         }
+    }
+
+    private async void SwitchTheme()
+    {
+        await Task.Delay(50);
+
+        _baseLayerLuminance = _inDarkMode ? StandardLuminance.DarkMode : StandardLuminance.LightMode;
+        await BaseLayerLuminance.SetValueFor(_container, _baseLayerLuminance.GetLuminanceValue());
+        GlobalState.SetLuminance(_baseLayerLuminance);
+
+        // await _jsModule!.InvokeVoidAsync("switchHighlightStyle", _baseLayerLuminance == StandardLuminance.DarkMode);
     }
 }

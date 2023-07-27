@@ -54,6 +54,7 @@ namespace NostrDebug.Web.Relay
 
         public async Task<bool> Connect(string? relayUrl)
         {
+            await Task.CompletedTask;
             IsUsed = true;
             if (_communicator.IsRunning)
             {
