@@ -1,9 +1,11 @@
 ﻿@using Microsoft.Fast.Components.FluentUI.DesignTokens
+@using Blazored.LocalStorage
 @inherits LayoutComponentBase
 @inject RelayList Relays
 @inject GlobalState GlobalState
 @inject BaseLayerLuminance BaseLayerLuminance
 @inject IJSRuntime JsRuntime
+@inject ILocalStorageService LocalStorage
 
 <div class="container" @ref="_container">
     <div class="siteheader">
@@ -65,15 +67,16 @@
             </main>
         </div>
     </div>
+    
+    <FluentDialog @ref="_relayDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideRelayDialog">
+        <div class="dialog-content">
+            <Relay></Relay>
+        </div>
+    </FluentDialog>
 </div>
 
-<FluentDialog @ref="_relayDialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideRelayDialog">
-    <div class="dialog-content">
-        <Relay></Relay>
-    </div>
-</FluentDialog>
-
 @code {
+    private const string DarkModeKey = "darkMode";
     private ElementReference _container;
     private FluentDialog? _relayDialog;
 
@@ -106,9 +109,10 @@
             _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import",
                 "./Components/MainLayout.razor.js");
 
-            _inDarkMode = await _jsModule!.InvokeAsync<bool>("isDarkMode");
+            var lastDarkMode = await LocalStorage.GetItemAsync<bool?>(DarkModeKey);
+            _inDarkMode = lastDarkMode ?? await _jsModule!.InvokeAsync<bool>("isDarkMode");
 
-            SwitchTheme();
+            await SwitchTheme();
             StateHasChanged();
         }
             
@@ -127,14 +131,15 @@
         }
     }
 
-    private async void SwitchTheme()
+    private async Task SwitchTheme()
     {
         await Task.Delay(50);
 
         _baseLayerLuminance = _inDarkMode ? StandardLuminance.DarkMode : StandardLuminance.LightMode;
         await BaseLayerLuminance.SetValueFor(_container, _baseLayerLuminance.GetLuminanceValue());
         GlobalState.SetLuminance(_baseLayerLuminance);
-
+        await LocalStorage.SetItemAsync(DarkModeKey, _inDarkMode);
+        
         // await _jsModule!.InvokeVoidAsync("switchHighlightStyle", _baseLayerLuminance == StandardLuminance.DarkMode);
     }
 }

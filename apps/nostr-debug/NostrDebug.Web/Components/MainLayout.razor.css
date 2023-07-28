@@ -1,0 +1,7 @@
+::deep .label {
+    color: var(--neutral-foreground-rest);
+}
+
+.label {
+    color: var(--neutral-foreground-rest);
+}

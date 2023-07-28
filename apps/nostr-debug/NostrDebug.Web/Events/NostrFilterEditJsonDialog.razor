@@ -2,6 +2,8 @@
 @using Nostr.Client.Json
 @using BlazorMonaco.Editor;
 @using Nostr.Client.Requests
+@using Blazored.LocalStorage
+@inject ILocalStorageService LocalStorage
 
 <FluentDialog @ref="_dialog" Modal="true" TrapFocus="true" @ondialogdismiss="OnHideEvent">
     <div class="content">
@@ -25,7 +27,7 @@
     private string? _data;
     private string? _error;
 
-    private readonly string _themeName = "vs";
+    private string _themeName = "vs";
 
     [Parameter]
     public EventCallback<NostrFilter> Applied { get; set; }
@@ -43,6 +45,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var isDarkTheme = await LocalStorage.GetItemAsync<bool?>("darkMode");
+        _themeName = isDarkTheme == true ? "vs-dark" : "vs";
+        
         await Global.SetTheme(_themeName);
         await base.OnInitializedAsync();
     }
