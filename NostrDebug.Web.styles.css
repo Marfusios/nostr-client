@@ -1,5 +1,13 @@
 @import '_content/Microsoft.Fast.Components.FluentUI/Microsoft.Fast.Components.FluentUI.bundle.scp.css';
 
+/* /Components/MainLayout.razor.rz.scp.css */
+[b-nv7bno2ntu] .label {
+    color: var(--neutral-foreground-rest);
+}
+
+.label[b-nv7bno2ntu] {
+    color: var(--neutral-foreground-rest);
+}
 /* /Components/NavMenu.razor.rz.scp.css */
 .navigation[b-lsu3cnntij] {
     background-color: var(--fill-color);
@@ -135,23 +143,26 @@
     color: var(--error);
 }
 /* /Events/NostrEventEdit.razor.rz.scp.css */
-
+[b-dv3t3xoh4d] .positioning-region {
+    background-color: transparent;
+}
 /* /Events/NostrEventEditJsonDialog.razor.rz.scp.css */
 [b-0tyumfk97n] .monaco-editor-container {
     width: 100%;
     height: 400px;
+    background-color: var(--fill-color);
 }
 
 [b-0tyumfk97n] .monaco-editor-background {
-    background-color: #fbfbfb;
+    background-color: var(--fill-color);
 }
 
 [b-0tyumfk97n] .monaco-editor .margin {
-    background-color: #fbfbfb;
+    background-color: var(--fill-color);
 }
 
 [b-0tyumfk97n] .decorationsOverviewRuler {
-    background-color: #fbfbfb;
+    background-color: var(--fill-color);
 }
 
 .content[b-0tyumfk97n] {
@@ -180,18 +191,19 @@
 [b-tl4rs381ly] .monaco-editor-container {
     width: 100%;
     height: 400px;
+    background-color: var(--fill-color);
 }
 
 [b-tl4rs381ly] .monaco-editor-background {
-    background-color: #fbfbfb;
+    background-color: var(--fill-color);
 }
 
 [b-tl4rs381ly] .monaco-editor .margin {
-    background-color: #fbfbfb;
+    background-color: var(--fill-color);
 }
 
 [b-tl4rs381ly] .decorationsOverviewRuler {
-    background-color: #fbfbfb;
+    background-color: var(--fill-color);
 }
 
 .content[b-tl4rs381ly] {
