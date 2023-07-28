@@ -14,7 +14,8 @@ namespace NostrDebug.Web.Relay
             "wss://relay.damus.io",
             "wss://nostr-pub.wellorder.net",
             "wss://nostr.wine",
-            "wss://relay.snort.social"
+            "wss://relay.snort.social",
+            "wss://soloco.nl"
         });
 
         private static readonly string RelaysToSelectKey = "relays-to-select";
