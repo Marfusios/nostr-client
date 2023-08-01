@@ -27,6 +27,7 @@
                       OptionText="@(p => $"{p.ToString()} [{(int)p}]")"
                       @bind-SelectedOptions="_selectedKinds"
                       @onfocusout="OnLostFocus"
+                      style="z-index: 5"
                       >
         </FluentSelect>
     }
