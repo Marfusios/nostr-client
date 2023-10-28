@@ -56,6 +56,8 @@
 
         LiveEvent = 30311,
 
+        ClassifiedListing = 30402,
+
         // nip-16 regular events                   [ 1000- 9999]
         // nip-16 replaceable events               [10000-19999]
         // nip-16 ephemeral  events                [20000-29999]
