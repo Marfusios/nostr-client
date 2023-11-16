@@ -6,6 +6,7 @@
 @using Nostr.Client.Messages.Zaps
 @inject ClipboardService Clipboard;
 @inject IJSRuntime JsRuntime
+@inject EventStorage EventStorage;
 
 <div>
     <PageHeader Title3="@_displayedEvent?.Kind.ToString()" DisplayBrowserTitle="false"></PageHeader>
@@ -26,25 +27,39 @@
 
                 @foreach (var tag in _displayedEvent.Tags.GroupBy(x => x.TagIdentifier))
                 {
+                    var data = tag
+                        .SelectMany(x => x.AdditionalData)
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .ToArray();
                     <FluentTreeItem>
-                        <span>@tag.Key <small>(@tag.SelectMany(x => x.AdditionalData).Count())</small></span>
+                        <span>@tag.Key <small>(@data.Length)</small></span>
 
-                        @foreach (var otherTag in tag.SelectMany(x => x.AdditionalData))
+                        @foreach (var otherTag in data)
                         {
-                            <FluentTreeItem>
-                                @switch (tag.Key)
-                                {
-                                    case NostrEventTag.EventIdentifier:
-                                        <div><a class="clear-link" href="@ExternalLinks.GetLinkToEvent(otherTag?.ToString())" target="_blank">@ExternalLinks.FormatToNote(otherTag?.ToString())</a></div>
-                                        break;
-                                    case NostrEventTag.ProfileIdentifier:
-                                        <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(otherTag?.ToString())" target="_blank">@ExternalLinks.FormatToNpub(otherTag?.ToString())</a></div>
-                                        break;
-                                    default:
+                            if (!string.IsNullOrWhiteSpace(otherTag))
+                            {
+                                <FluentTreeItem>
+                                    @if (NostrConverter.IsHex(otherTag))
+                                    {
+                                        @switch (tag.Key)
+                                        {
+                                            case NostrEventTag.EventIdentifier:
+                                                <div><a class="clear-link" href="@ExternalLinks.GetLinkToEvent(otherTag)" target="_blank">@ExternalLinks.FormatToNote(otherTag)</a></div>
+                                                break;
+                                            case NostrEventTag.ProfileIdentifier:
+                                                <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(otherTag)" target="_blank">@ExternalLinks.FormatToNpub(otherTag)</a></div>
+                                                break;
+                                            default:
+                                                <div><span>@otherTag</span></div>
+                                                break;
+                                        }
+                                    }
+                                    else
+                                    {
                                         <div><span>@otherTag</span></div>
-                                        break;
-                                }
-                            </FluentTreeItem>
+                                    }
+                                </FluentTreeItem>
+                            }
                         }
 
                     </FluentTreeItem>
@@ -74,6 +89,13 @@
         <strong>Author</strong>
         <div>@_displayedEvent?.Pubkey</div>
         <div><a class="clear-link" href="@ExternalLinks.GetLinkToProfile(_displayedEvent?.Pubkey)" target="_blank">@ExternalLinks.FormatToNpub(_displayedEvent?.Pubkey)</a></div>
+    </p>
+    <p>
+        <strong>Relays</strong>
+        @foreach (var communicator in EventStorage.FindCommunicators(_displayedEvent?.Id).OrderBy(x => x))
+        {
+            <div>@communicator</div>
+        }
     </p>
 
     @if (_displayedEvent is NostrZapReceiptEvent zapEvent)

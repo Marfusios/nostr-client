@@ -52,6 +52,28 @@
         }
 
         /// <summary>
+        /// Check whether input is valid hex string
+        /// </summary>
+        /// <param name="hexKey"></param>
+        /// <returns></returns>
+        public static bool IsHex(string? hexKey)
+        {
+            if (string.IsNullOrWhiteSpace(hexKey))
+                return false;
+
+            try
+            {
+                return HexExtensions.IsHex(hexKey);
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Convert hex string to Bech32 format, you need to provide hrp (prefix)
         /// </summary>
         public static string? ToBech32(string? hexKey, string hrp)
@@ -83,7 +105,7 @@
             bech32 = null;
             try
             {
-                bech32 = ToBech32(bech32, hrp);
+                bech32 = ToBech32(hexKey, hrp);
                 return !string.IsNullOrWhiteSpace(bech32);
             }
             catch (Exception)

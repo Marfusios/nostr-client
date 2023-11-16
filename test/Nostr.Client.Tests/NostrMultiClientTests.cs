@@ -70,7 +70,7 @@ namespace Nostr.Client.Tests
             client.Send(new NostrEventRequest(ev));
 
             Assert.Equal(3, receivedEvents.Count);
-            Assert.True(receivedEvents.Any(x => x?.CommunicatorName == communicator2.Name));
+            Assert.Contains(receivedEvents, x => x?.CommunicatorName == communicator2.Name);
             Assert.NotNull(client.FindClient(communicator3.Name));
         }
 
@@ -99,7 +99,7 @@ namespace Nostr.Client.Tests
             client.Send(new NostrEventRequest(ev));
 
             Assert.Equal(3, receivedEvents.Count);
-            Assert.True(receivedEvents.Any(x => x?.CommunicatorName == communicator2.Name));
+            Assert.Contains(receivedEvents, x => x?.CommunicatorName == communicator2.Name);
             Assert.NotNull(client.FindClient(communicator2.Name));
 
             client.RemoveRegistration(communicator2.Name);
@@ -108,7 +108,7 @@ namespace Nostr.Client.Tests
             client.Send(new NostrEventRequest(ev));
 
             Assert.Equal(2, receivedEvents.Count);
-            Assert.False(receivedEvents.Any(x => x?.CommunicatorName == communicator2.Name));
+            Assert.DoesNotContain(receivedEvents, x => x?.CommunicatorName == communicator2.Name);
             Assert.Null(client.FindClient(communicator2.Name));
         }
     }

@@ -19,6 +19,22 @@ namespace Nostr.Client.Utils
             return arr;
         }
 
+        public static bool IsHex(string hex)
+        {
+            if (hex.Length % 2 == 1)
+                return false;
+            foreach(var c in hex.ToArray())
+            {
+                var isHex = (c >= '0' && c <= '9') || 
+                            (c >= 'a' && c <= 'f') || 
+                            (c >= 'A' && c <= 'F');
+
+                if(!isHex)
+                    return false;
+            }
+            return true;
+        }
+        
         public static int GetHexValue(char hex)
         {
             var val = (int)hex;

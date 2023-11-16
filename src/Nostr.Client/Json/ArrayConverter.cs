@@ -70,6 +70,14 @@ namespace Nostr.Client.Json
                         writer.WriteValue(additional);
                 }
             }
+            
+            if (value is IHaveAdditionalStringData valueWithStringData)
+            {
+                foreach (var additional in valueWithStringData.AdditionalData)
+                {
+                    writer.WriteValue(additional);
+                }
+            }
 
             writer.WriteEndArray();
         }
@@ -191,6 +199,15 @@ namespace Nostr.Client.Json
                     .Where(x => x != null)
                     .ToArray();
                 resultWithData.SetAdditionalData(unhandledData!);
+            }
+            
+            if (arr.Count > maxIndex && result is IHaveAdditionalStringData resultWithStringData)
+            {
+                var unhandledData = arr.Skip(maxIndex)
+                    .Select(x => x.Value<string?>())
+                    .Where(x => x != null)
+                    .ToArray();
+                resultWithStringData.SetAdditionalData(unhandledData!);
             }
 
             return result;

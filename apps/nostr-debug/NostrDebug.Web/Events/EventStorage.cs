@@ -7,6 +7,7 @@ namespace NostrDebug.Web.Events
     {
         private readonly Dictionary<string, NostrEventResponse> _responses = new();
         private readonly Dictionary<string, NostrEvent> _events = new();
+        private readonly Dictionary<string, HashSet<string>> _eventToCommunicators = new();
 
         public void Store(NostrEventResponse? response)
         {
@@ -14,6 +15,10 @@ namespace NostrDebug.Web.Events
             if (eventId == null)
                 return;
             _responses[eventId] = response!;
+
+            if (!_eventToCommunicators.ContainsKey(eventId))
+                _eventToCommunicators[eventId] = new HashSet<string>();
+            _eventToCommunicators[eventId].Add(response!.CommunicatorName);
         }
 
         public void Store(NostrEvent? ev)
@@ -34,9 +39,17 @@ namespace NostrDebug.Web.Events
 
         public NostrEvent? FindEvent(string eventId)
         {
-            return _events.ContainsKey(eventId) ?
-                _events[eventId] :
+            return _events.TryGetValue(eventId, out var @event) ?
+                @event :
                 null;
+        }
+
+        public string[] FindCommunicators(string? eventId)
+        {
+            var key = eventId ?? string.Empty;
+            return _eventToCommunicators.TryGetValue(key, out var communicators) ?
+                communicators.ToArray() :
+                Array.Empty<string>();
         }
 
         public void Clear()

@@ -31,4 +31,21 @@ public class NostrConverterTests
         var converted = NostrConverter.ToNsec(hex);
         Assert.Equal(expected, converted);
     }
+    
+    [Theory]
+    [InlineData("6b75a3b4832f265989254ca560b700da3343d707d2319e7a45f4e01afe4a0c31", true)]
+    [InlineData("63fe6318dc58583cfe16810f86dd09e18bfd76aabc24a0081ce2856f330504ed", true)]
+    [InlineData("aa", true)]
+    [InlineData("AA", true)]
+    [InlineData("a", false)]
+    [InlineData("A", false)]
+    [InlineData(null, false)]
+    [InlineData("", false)]
+    [InlineData("root", false)]
+    [InlineData("reply", false)]
+    public void IsHex_ShouldReturnCorrectValue(string? hex, bool isValid)
+    {
+        var isHex = NostrConverter.IsHex(hex);
+        Assert.Equal(isValid, isHex);
+    }
 }

@@ -9,15 +9,15 @@ namespace Nostr.Client.Messages.Mutable
         {
         }
 
-        public NostrEventTagMutable(string? identifier, params object[] data)
+        public NostrEventTagMutable(string? identifier, params string[] data)
         {
-            TagIdentifier = identifier;
+            TagIdentifier = identifier ?? string.Empty;
             AdditionalData = data;
         }
 
-        public string? TagIdentifier { get; set; }
+        public string TagIdentifier { get; set; } = string.Empty;
 
-        public object[] AdditionalData { get; set; } = Array.Empty<object>();
+        public string[] AdditionalData { get; set; } = Array.Empty<string>();
 
         public NostrEventTag ToTag()
         {

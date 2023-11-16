@@ -72,13 +72,14 @@
         base.OnInitialized();
     }
 
-    private void HandleEvent(IList<NostrEventResponse> response)
+    private void HandleEvent(IList<NostrEventResponse> responses)
     {
-        var events = response
-            .Where(x => x.Event != null);
-        foreach (var evView in events)
+        foreach (var response in responses)
         {
-            _receivedData.Add(evView.Event!);
+            if(response.Event == null)
+                continue;
+            EventStorage.Store(response);
+            _receivedData.Add(response.Event!);
         }
         StateHasChanged();
     }

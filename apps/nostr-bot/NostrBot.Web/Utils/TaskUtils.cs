@@ -8,7 +8,7 @@ public static class TaskUtils
         {
             await Task.Delay(delay, cancellationToken ?? CancellationToken.None);
         }
-        catch (OperationCanceledException e)
+        catch (OperationCanceledException)
         {
             // ignore
         }

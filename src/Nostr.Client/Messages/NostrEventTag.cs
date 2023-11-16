@@ -6,7 +6,7 @@ namespace Nostr.Client.Messages
 {
     [DebuggerDisplay("Tag {TagIdentifier} additional: {AdditionalData.Length}")]
     [JsonConverter(typeof(ArrayConverter))]
-    public class NostrEventTag : IHaveAdditionalData
+    public class NostrEventTag : IHaveAdditionalStringData
     {
         public const string EventIdentifier = "e";
         public const string ProfileIdentifier = "p";
@@ -17,25 +17,25 @@ namespace Nostr.Client.Messages
         {
         }
 
-        public NostrEventTag(string? identifier, params object[] data)
+        public NostrEventTag(string? identifier, params string[] data)
         {
-            TagIdentifier = identifier;
+            TagIdentifier = identifier ?? string.Empty;
             AdditionalData = data;
         }
 
-        [ArrayProperty(0)]
-        public string? TagIdentifier { get; init; }
+        [ArrayProperty(0)] 
+        public string TagIdentifier { get; init; } = string.Empty;
 
         /// <summary>
         /// Additional unexpected data at higher indexes in the tags array
         /// </summary>
-        public object[] AdditionalData { get; private set; } = Array.Empty<object>();
+        public string[] AdditionalData { get; private set; } = Array.Empty<string>();
 
         /// <summary>
         /// Set additional data, should not be used outside of this library.
         /// Hidden behind explicit interface implementation to avoid accidental usage.
         /// </summary>
-        void IHaveAdditionalData.SetAdditionalData(object[] data)
+        void IHaveAdditionalStringData.SetAdditionalData(string[] data)
         {
             AdditionalData = data;
         }
@@ -45,7 +45,7 @@ namespace Nostr.Client.Messages
             return new NostrEventTag
             {
                 TagIdentifier = TagIdentifier,
-                AdditionalData = (object[])AdditionalData.Clone()
+                AdditionalData = (string[])AdditionalData.Clone()
             };
         }
 
