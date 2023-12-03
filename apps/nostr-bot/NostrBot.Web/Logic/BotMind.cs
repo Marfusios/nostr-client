@@ -1,4 +1,5 @@
 ﻿using System.Reactive.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using Nostr.Client.Client;
 using NostrBot.Web.Configs;
@@ -34,6 +35,10 @@ namespace NostrBot.Web.Logic
 
         private readonly NostrPrivateKey _botPrivateKey;
         private readonly NostrPublicKey _botPublicKey;
+
+        private readonly Regex _imageUrlRegex = new Regex(
+            @"\b(https?:\/\/\S+(?:png|webp|jpe?g|gif)\S*)\b",
+            RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
         private CancellationToken? _stoppingToken;
 
@@ -264,7 +269,17 @@ namespace NostrBot.Web.Logic
             chatPrompts.AddRange(IncludeBotDescription());
             chatPrompts.AddRange(IncludeBotWhois());
             chatPrompts.AddRange(await IncludeHistory(contextId, secondaryContextId, response));
-            chatPrompts.Add(new Message(Role.User, $"@{ToNpub(response.Event?.Pubkey)}: {userMessageProcessed}"));
+
+            var content = new List<Content>();
+            var textContent = new Content($"@{ToNpub(response.Event?.Pubkey)}: {userMessageProcessed}");
+            content.Add(textContent);
+
+            if (_openAiConfig.ModelSupportsVision)
+            {
+                IncludeImages(content, userMessageProcessed);
+            }
+
+            chatPrompts.Add(new Message(Role.User, content));
 
             CircuitBreaker(chatPrompts);
 
@@ -433,6 +448,18 @@ namespace NostrBot.Web.Logic
             }
 
             events.AddRange(await _storage.GetHistoryForContext(context, null));
+        }
+        
+        private void IncludeImages(List<Content> content, string? message)
+        {
+            var messageSafe = message ?? string.Empty;
+            var match = _imageUrlRegex.Match(messageSafe);
+            if (!match.Success)
+                return;
+
+            var imageUrl = match.Value;
+            var imageContent = new Content(new ImageUrl(imageUrl));
+            content.Add(imageContent);
         }
 
         private int CountTextTokens(string text)
