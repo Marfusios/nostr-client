@@ -6,6 +6,9 @@
         public string Organization { get; init; } = null!;
 
         public string Model { get; init; } = "gpt-3.5-turbo";
+        public string ImageModel { get; init; } = "dall-e-3";
+        public int ImageCount { get; init; } = 1;
+        public string ImageQuality { get; init; } = "hd";
 
         public double? Temperature { get; init; }
 

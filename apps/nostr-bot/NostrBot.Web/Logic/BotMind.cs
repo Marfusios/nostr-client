@@ -228,6 +228,7 @@ namespace NostrBot.Web.Logic
                 var comment = await _management.ProcessCommand(decryptedMessage, dm.Pubkey);
                 SendDirectMessage(comment, _botPrivateKey, receiver);
                 await _storage.Store("command", response, dm, comment, decryptedMessage, null);
+                Log.Debug("[{relay}] Direct reply to command sent: {reply}", response.CommunicatorName, comment);
                 return;
             }
 

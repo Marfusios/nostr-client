@@ -6,6 +6,8 @@ using Nostr.Client.Messages;
 using Nostr.Client.Requests;
 using Nostr.Client.Utils;
 using NostrBot.Web.Configs;
+using OpenAI;
+using OpenAI.Images;
 
 namespace NostrBot.Web.Logic
 {
@@ -13,14 +15,20 @@ namespace NostrBot.Web.Logic
     {
         private const char CommandPrefix = '!';
         private const string CommandReplyTo = "reply";
+        private const string CommandGenerateImage = "image";
 
         private readonly BotConfig _config;
+        private readonly OpenAiConfig _aiConfig;
         private readonly NostrMultiWebsocketClient _client;
+        private readonly OpenAIClient _aiClient;
 
-        public BotManagement(IOptions<BotConfig> config, NostrMultiWebsocketClient client)
+        public BotManagement(IOptions<BotConfig> config, IOptions<OpenAiConfig> aiConfig,
+            NostrMultiWebsocketClient client, OpenAIClient aiClient)
         {
             _config = config.Value;
+            _aiConfig = aiConfig.Value;
             _client = client;
+            _aiClient = aiClient;
         }
 
         public bool IsCommand(string? message)
@@ -47,6 +55,11 @@ namespace NostrBot.Web.Logic
             if (targetCommand.StartsWith(CommandReplyTo))
             {
                 return OnReply(messageSafe);
+            }
+
+            if (targetCommand.StartsWith(CommandGenerateImage))
+            {
+                return await OnImage(messageSafe);
             }
 
             return "Unknown command";
@@ -82,6 +95,22 @@ namespace NostrBot.Web.Logic
             };
             _client.Send(new NostrRequest(content, filter));
             return $"Requesting event {content}";
+        }
+        
+        private async Task<string> OnImage(string messageSafe)
+        {
+            var commandLenght = CommandGenerateImage.Length;
+            var content = messageSafe[commandLenght..].Trim();
+
+            var request = new ImageGenerationRequest(
+                content,
+                _aiConfig.ImageModel,
+                _aiConfig.ImageCount,
+                quality: _aiConfig.ImageQuality
+                );
+            var response = await _aiClient.ImagesEndPoint.GenerateImageAsync(request);
+
+            return string.Join(" ", response.Select(x => $"{x.RevisedPrompt} \n\n{x.Url}"));
         }
     }
 }
